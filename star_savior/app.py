@@ -7,15 +7,16 @@ import ctypes
 from html import escape
 from ctypes import wintypes
 from pathlib import Path
+from datetime import datetime
 from PySide6.QtCore import QAbstractNativeEventFilter, QSettings, QStandardPaths, QThread, QTimer, QUrl, Qt, Signal, QRect, QPoint
 from PySide6.QtGui import QDesktopServices, QFont, QImage, QPainter, QPixmap
-from PySide6.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QFileDialog, QHBoxLayout, QLabel, QListWidget, QMainWindow, QPushButton, QRubberBand, QTextBrowser, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QComboBox, QDialog, QHBoxLayout, QLabel, QListWidget, QMainWindow, QPushButton, QRubberBand, QTextBrowser, QVBoxLayout, QWidget
 from .core import match_regions
 from .layout import DEFAULT_REGIONS, valid_regions
 from .floating import FloatingButton, FloatingResults
 from .website import DIFFICULTIES, SOURCE_URL, WebsiteStore, download
 from .i18n import LANGUAGES, tr
-from .presentation import ResultPanel, THEME
+from .presentation import THEME
 from . import windows
 
 
@@ -111,7 +112,7 @@ class MainWindow(QMainWindow):
     def __init__(self, data_dir):
         super().__init__()
         self.setWindowTitle('StarSavior 跑马助手')
-        self.resize(820, 680)
+        self.resize(820, 410)
         self.setStyleSheet(THEME)
         self.store = WebsiteStore(data_dir / 'website.sqlite3')
         self.settings = QSettings(str(data_dir / 'settings.ini'), QSettings.Format.IniFormat)
@@ -156,27 +157,27 @@ class MainWindow(QMainWindow):
         self.summary.setObjectName('summary')
         layout.addWidget(self.summary)
         row = QHBoxLayout()
+        self.sync_button = self.button('sync', self.sync)
+        self.sync_button.setProperty('primary', True)
+        row.addWidget(self.sync_button, 1)
+        row.addWidget(self.button('website', lambda: QDesktopServices.openUrl(QUrl(SOURCE_URL))), 1)
+        layout.addLayout(row)
+        row = QHBoxLayout()
         row.addWidget(self.label('language'))
         self.language_list = QComboBox()
         for code, name in LANGUAGES.items():
             self.language_list.addItem(name, code)
         self.language_list.setCurrentIndex(self.language_list.findData(self.language))
         self.language_list.currentIndexChanged.connect(self.language_changed)
-        row.addWidget(self.language_list)
-        self.sync_button = self.button('sync', self.sync)
-        self.sync_button.setProperty('primary', True)
-        row.addWidget(self.sync_button)
-        row.addWidget(self.button('website', lambda: QDesktopServices.openUrl(QUrl(SOURCE_URL))))
-        layout.addLayout(row)
-        row = QHBoxLayout()
+        row.addWidget(self.language_list, 1)
+        row.addSpacing(12)
         row.addWidget(self.label('difficulty'))
         self.difficulty_list = QComboBox()
         for difficulty in DIFFICULTIES:
             self.difficulty_list.addItem(self.t(difficulty), difficulty)
         self.difficulty_list.setCurrentIndex(self.difficulty_list.findData(self.difficulty))
         self.difficulty_list.currentIndexChanged.connect(self.difficulty_changed)
-        row.addWidget(self.difficulty_list)
-        row.addStretch()
+        row.addWidget(self.difficulty_list, 1)
         layout.addLayout(row)
         row = QHBoxLayout()
         self.window_list = QComboBox()
@@ -190,38 +191,24 @@ class MainWindow(QMainWindow):
         
         row.addWidget(self.select_region)
         layout.addLayout(row)
-        row = QHBoxLayout()
-        floating = self.button('floating', self.enable_floating)
-        floating.setProperty('primary', True)
-        
-        row.addWidget(floating)
-        reset = self.button('reset', self.reset_regions)
-        
-        row.addWidget(reset)
-        layout.addLayout(row)
-        row = QHBoxLayout()
-        self.capture_button = self.button('capture', lambda: self.prepare_capture(False))
-        self.capture_button.setProperty('primary', True)
-        
-        row.addWidget(self.capture_button)
-        self.image_button = self.button('image', self.open_image)
-        
-        row.addWidget(self.image_button)
-        topmost = QCheckBox()
-        self.translatable.append((topmost, 'topmost'))
-        topmost.toggled.connect(self.set_topmost)
-        row.addWidget(topmost)
-        layout.addLayout(row)
-        self.result_panel = ResultPanel(self)
-        self.status = self.result_panel.status
+        self.status = QLabel()
+        self.status.setObjectName('status')
+        self.status.setWordWrap(True)
         self.status.setText(self.t('ready'))
-        self.ocr_text = self.result_panel.details
-        self.candidate_list = self.result_panel.candidates
-        self.candidate_list.itemClicked.connect(self.choose_candidate)
-        self.effects = self.result_panel.effects
-        layout.addWidget(self.result_panel, 1)
+        layout.addWidget(self.status)
+        layout.addStretch(1)
+        row = QHBoxLayout()
+        row.addStretch(1)
+        self.start_button = self.button('start', self.enable_floating)
+        self.start_button.setObjectName('startButton')
+        self.start_button.setFixedSize(84, 84)
+        self.start_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        row.addWidget(self.start_button)
+        layout.addLayout(row)
+        self.ocr_text = self.floating_results.details
+        self.candidate_list = self.floating_results.candidates
+        self.effects = self.floating_results.effects
         self.setCentralWidget(body)
-        self.result_panel.height_changed.connect(self.fit_results)
         self.retranslate()
         self.refresh_windows()
         self.update_summary()
@@ -236,8 +223,7 @@ class MainWindow(QMainWindow):
     def fit_results(self):
         area = self.screen().availableGeometry()
         layout = self.centralWidget().layout()
-        controls = layout.sizeHint().height() - self.result_panel.sizeHint().height()
-        height = min(controls + self.result_panel.natural_height(), max(240, area.height() - 64))
+        height = min(max(410, layout.sizeHint().height()), max(240, area.height() - 64))
         self.resize(min(self.width(), area.width() - 32), height)
         if self.isVisible():
             frame = self.frameGeometry()
@@ -256,14 +242,13 @@ class MainWindow(QMainWindow):
         return widget
 
     def retranslate(self):
-        self.setWindowTitle('StarSavior · ' + self.t('effects'))
+        self.setWindowTitle('StarSavior · ' + self.t('settings'))
         for widget, key in self.translatable:
             widget.setText(self.t(key))
         for index in range(self.difficulty_list.count()):
             self.difficulty_list.setItemText(index, self.t(self.difficulty_list.itemData(index)))
         self.floating_button.set_language(self.language)
         self.floating_results.set_language(self.language)
-        self.result_panel.set_language(self.language)
 
     def language_changed(self, *_):
         if self.busy or (self.sync_worker and self.sync_worker.isRunning()):
@@ -300,7 +285,10 @@ class MainWindow(QMainWindow):
 
     def update_summary(self):
         updated = self.store.updated()
-        self.summary.setText(self.t('summary', count=len(self.store.load()), updated=updated if updated != 'Never' else self.t('never')))
+        displayed = (datetime.fromisoformat(updated).astimezone().strftime('%Y-%m-%d %H:%M:%S')
+                     if updated != 'Never' else self.t('never'))
+        self.summary.setText(self.t('summary', count=len(self.store.load()), updated=displayed))
+        self.summary.setToolTip(self.t('data_updated_hint'))
 
     def sync(self):
         if self.busy or (self.sync_worker and self.sync_worker.isRunning()):
@@ -358,11 +346,6 @@ class MainWindow(QMainWindow):
         if self.window_list.currentData():
             self.settings.setValue('game_window_title', title)
 
-    def reset_regions(self):
-        self.regions = dict(DEFAULT_REGIONS)
-        self.settings.remove('event_regions/' + self.window_list.currentText())
-        self.status.setText(self.t('reset_done'))
-
     def enable_floating(self):
         if not self.window_list.currentData():
             self.status.setText(self.t('choose_first'))
@@ -391,18 +374,12 @@ class MainWindow(QMainWindow):
     def show_scan_status(self, text):
         self.status.setText(text)
         self.floating_results.status.setText(text)
-        self.result_panel.schedule_fit()
         self.floating_results.panel.schedule_fit()
-        if self.floating_mode:
-            self.floating_results.show_near(self.floating_button)
-
-    def set_topmost(self, enabled):
-        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, enabled)
-        self.show()
+        self.floating_results.show_near(self.floating_button if self.floating_mode else self)
 
     def clear_results(self):
         self.last_recognition = None
-        self.result_panel.clear_results()
+        self.status.clear()
         self.candidates = []
         self.floating_results.clear_results()
 
@@ -454,20 +431,6 @@ class MainWindow(QMainWindow):
             self.restore_capture_ui()
             self.show_scan_status(self.t('capture_failed', error=exc))
 
-    def open_image(self):
-        if self.busy:
-            return
-        self.clear_results()
-        path, _ = QFileDialog.getOpenFileName(self, self.t('image'), '', 'Images (*.png *.jpg *.jpeg *.bmp)')
-        if path:
-            try:
-                from PIL import Image
-                with Image.open(path) as source:
-                    image = source.convert('RGB')
-                self.start_ocr(image)
-            except Exception as exc:
-                self.status.setText(self.t('image_failed', error=exc))
-
     def start_ocr(self, image):
         self.busy = True
         self.floating_button.set_busy(True)
@@ -490,7 +453,6 @@ class MainWindow(QMainWindow):
         title, options = result['title'], result['options']
         recognized = self.t('title') + ':\n' + ('\n'.join(title) or self.t('unreadable')) + '\n\n' + self.t('options') + ':\n' + ('\n'.join(options) or self.t('unreadable'))
         self.ocr_text.setPlainText(recognized)
-        self.floating_results.details.setPlainText(recognized)
         events = self.store.load()
         state, self.candidates, reason = match_regions(events, title, options)
         if not events:
@@ -506,14 +468,8 @@ class MainWindow(QMainWindow):
                 label = ' | '.join(value for value in (candidate.event.title, candidate.event.visible_phase,
                     candidate.event.visible_source, f'{candidate.score:.2f}') if value)
                 self.candidate_list.addItem(label)
-                self.floating_results.candidates.addItem(label)
                 details = f'{candidate.event.phase}\n{candidate.event.source}'
                 self.candidate_list.item(self.candidate_list.count() - 1).setToolTip(details)
-                self.floating_results.candidates.item(self.floating_results.candidates.count() - 1).setToolTip(details)
-
-    def choose_candidate(self, item):
-        index = self.candidate_list.row(item)
-        self.confirm_candidate(index)
 
     def confirm_candidate(self, index):
         if not 0 <= index < len(self.candidates):
@@ -532,10 +488,8 @@ class MainWindow(QMainWindow):
                         f'{option.order}. {escape(option.text)}</h3><p style="line-height:145%;">{effect}</p>')
         content = ''.join(text)
         self.effects.setHtml(content)
-        self.floating_results.effects.setHtml(content)
         details = f'{self.t("data_details")}\n{event.phase}\n{event.source}'
         self.effects.setToolTip(details)
-        self.floating_results.effects.setToolTip(details)
 
     def closeEvent(self, event):
         if self.busy or (self.worker and self.worker.isRunning()) or (self.sync_worker and self.sync_worker.isRunning()):

@@ -18,6 +18,9 @@ QPushButton:hover { background: #eaf4ff; border-color: #84b8e4; }
 QPushButton:pressed { background: #dbeeff; }
 QPushButton[primary="true"] { background: #357db9; color: white; border-color: #357db9; }
 QPushButton[primary="true"]:hover { background: #286da6; }
+QPushButton#startButton { background: #357db9; color: white; border: 3px solid #d6eaff; border-radius: 42px; padding: 0; font-size: 19px; font-weight: 700; }
+QPushButton#startButton:hover { background: #286da6; border-color: #acd3f5; }
+QPushButton#startButton:pressed { background: #205987; }
 QPushButton:disabled { color: #8ba0b2; background: #e8eff5; border-color: #dce6ee; }
 QComboBox { background: white; border: 1px solid #cbdfee; border-radius: 8px; padding: 8px 12px; min-height: 20px; }
 QComboBox::drop-down { border: none; width: 24px; }

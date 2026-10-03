@@ -14,7 +14,7 @@ _rows = {
  'choose_first': ('请先选择游戏窗口。', '請先選擇遊戲視窗。', 'Select a game window first.', '先にゲームを選択してください。', '먼저 게임 창을 선택하세요.'),
  'reset_done': ('已恢复默认截图区域。', '已恢復預設截圖區域。', 'Default capture regions restored.', '既定の範囲に戻しました。', '기본 캡처 영역 복원 완료.'),
  'regions_saved': ('标题和选项区域已保存。', '標題與選項區域已儲存。', 'Title and choice regions saved.', '認識範囲を保存しました。', '제목 및 선택지 영역 저장 완료.'),
- 'hotkey_unavailable': ('快捷键不可用，请点击识别按钮。', '快捷鍵無法使用，請點選辨識按鈕。', 'Hotkey unavailable; use the Scan button.', 'ショートカット不可。認識ボタンをご利用ください。', '단축키를 사용할 수 없습니다. 인식 버튼을 사용하세요.'),
+ 'hotkey_unavailable': ('快捷键不可用，请启动悬浮按钮后点击识别。', '快捷鍵無法使用，請啟動浮動按鈕後點選辨識。', 'Hotkey unavailable. Click Start, then use the floating button to scan.', 'ショートカット不可。開始後、フローティングボタンで認識してください。', '단축키를 사용할 수 없습니다. 시작한 후 플로팅 버튼으로 인식하세요.'),
  'wait_close': ('请等待当前操作完成后关闭。', '請等待目前操作完成後關閉。', 'Wait for the current operation before closing.', '処理完了後に閉じてください。', '현재 작업 완료 후 닫으세요.'),
  'ocr_failed': ('识别失败：{error}', '辨識失敗：{error}', 'OCR failed: {error}', '認識失敗：{error}', '인식 실패: {error}'),
  'capture_failed': ('截图失败：{error}', '截圖失敗：{error}', 'Capture failed: {error}', 'キャプチャ失敗：{error}', '캡처 실패: {error}'),
@@ -22,7 +22,7 @@ _rows = {
  'sync': ('同步网站攻略', '同步網站攻略', 'Sync website guide', 'サイトから同期', '사이트 데이터 동기화'),
  'website': ('查看数据来源', '查看資料來源', 'Open source website', 'データ元を開く', '데이터 출처 열기'),
  'language': ('游戏与界面语言', '遊戲與介面語言', 'Game and interface language', 'ゲーム・表示言語', '게임 및 표시 언어'),
- 'summary': ('本地攻略：{count} 个事件 | 最近同步：{updated}', '本地攻略：{count} 個事件 | 最近同步：{updated}', 'Local guide: {count} events | Last sync: {updated}', 'ローカル：{count} 件 | 最終同期：{updated}', '로컬: {count}개 이벤트 | 마지막 동기화: {updated}'),
+ 'summary': ('本地攻略：{count} 个事件 | 数据更新时间：{updated}', '本地攻略：{count} 個事件 | 資料更新時間：{updated}', 'Local guide: {count} events | Data updated: {updated}', 'ローカル：{count} 件 | データ更新：{updated}', '로컬: {count}개 이벤트 | 데이터 갱신: {updated}'),
  'never': ('尚未同步', '尚未同步', 'Not synced', '未同期', '동기화 안 됨'),
  'syncing': ('正在下载并校验网站数据……', '正在下載並驗證網站資料……', 'Downloading and validating website data…', 'データを取得・検証中…', '데이터 다운로드 및 검증 중…'),
  'synced': ('同步成功；已保存全部五种语言，日常查询可离线使用。', '同步成功；已儲存全部五種語言，可離線查詢。', 'Synced all five languages. Daily lookups work offline.', '5 言語を同期しました。オフラインで検索できます。', '5개 언어 동기화 완료. 오프라인 조회가 가능합니다.'),
@@ -73,6 +73,8 @@ _rows = {
  'RT_JOURNEY_BUFF_REMOVE_POS': ('解除正面旅程效果', '解除正面旅程效果', 'Remove positive journey effects', '旅程の強化効果解除', '긍정 여정 효과 제거'),
 }
 _rows.update({
+ 'data_updated_hint': ('最近一次成功同步本地攻略的时间（本地时区）。', '最近一次成功同步本地攻略的時間（本地時區）。', 'Last successful local guide synchronization, in your local timezone.', 'ローカルデータの最終同期日時（現地時間）。', '로컬 시간 기준 마지막 데이터 동기화 시간입니다.'),
+ 'start': ('启动', '啟動', 'Start', '開始', '시작'),
  'difficulty': ('游戏难度', '遊戲難度', 'Game difficulty', 'ゲーム難易度', '게임 난이도'),
  'Easy': ('简单', '簡單', 'Easy', 'イージー', '이지'),
  'Normal': ('普通', '普通', 'Normal', 'ノーマル', '노말'),

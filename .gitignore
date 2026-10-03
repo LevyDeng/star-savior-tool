@@ -1,5 +1,11 @@
+# Python environments and generated files
 .venv/
 __pycache__/
-*.pyc
+*.py[cod]
 .pytest_cache/
+*.egg-info/
+
+# Local app data, PyInstaller work files, and distributable binaries
 .runtime/
+/build/
+/dist/
