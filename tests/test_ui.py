@@ -23,6 +23,38 @@ class UITests(unittest.TestCase):
             QFontDatabase.addApplicationFont(str(font))
             cls.app.setFont(QFont('Segoe UI', 10))
 
+    def test_single_weak_candidate_is_shown_but_ambiguous_candidates_wait(self):
+        from unittest.mock import patch
+        from star_savior.core import Event, Option, match_regions
+        event = Event('Training direction', '1', 'Test', [
+            Option(1, 'Attack training', 'Strength +10'),
+            Option(2, 'Survival training', 'Vitality +10')])
+        recognition = {'title': ['Training direction'], 'options': ['Attack training']}
+        state, candidates, _ = match_regions([event], **{
+            'title_lines': recognition['title'], 'option_lines': recognition['options']})
+        self.assertEqual(state, 'confirm')
+        self.assertEqual(len(candidates), 1)
+        with tempfile.TemporaryDirectory() as directory:
+            window = MainWindow(Path(directory))
+            window.language_list.setCurrentIndex(window.language_list.findData('en-US'))
+            with patch.object(window.store, 'load', return_value=[event]):
+                window.ocr_finished(recognition, 0.1)
+            self.assertIn('Strength +10', window.effects.toPlainText())
+            self.assertIn('only candidate', window.status.text())
+            self.assertEqual(window.candidate_list.count(), 0)
+            window.clear_results()
+            second = Event(event.title, '2', 'Other', event.options)
+            with patch.object(window.store, 'load', return_value=[event, second]):
+                window.ocr_finished(recognition, 0.1)
+            self.assertEqual(window.candidate_list.count(), 2)
+            self.assertEqual(window.effects.toPlainText(), '')
+            window.clear_results()
+            with patch.object(window.store, 'load', return_value=[event]):
+                window.ocr_finished({'title': ['Unrelated beach trip'], 'options': []}, 0.1)
+            self.assertEqual(window.effects.toPlainText(), '')
+            self.assertEqual(window.candidate_list.count(), 0)
+            window.close()
+
     def test_difficulty_refreshes_results_and_persists(self):
         from unittest.mock import patch
         from star_savior.core import Event, Option
@@ -143,6 +175,30 @@ class UITests(unittest.TestCase):
         QTest.mouseClick(button, Qt.MouseButton.LeftButton)
         self.assertEqual(scans.count(), 1)
         button.close()
+
+    def test_overlay_native_click_does_not_activate_and_still_scans(self):
+        if os.name != 'nt':
+            self.skipTest('Native overlay activation requires Win32')
+        import ctypes
+        from ctypes import wintypes
+        from unittest.mock import patch
+        from PySide6.QtCore import Qt
+        from PySide6.QtTest import QSignalSpy, QTest
+        from star_savior.floating import FloatingButton, FloatingResults
+        message = wintypes.MSG()
+        message.message = 0x0021
+        for overlay in (FloatingButton(), FloatingResults()):
+            with patch('star_savior.floating.windows.make_nonactivating') as prevent:
+                overlay.show()
+                self.app.processEvents()
+                prevent.assert_called_once_with(int(overlay.winId()))
+            self.assertTrue(overlay.windowFlags() & Qt.WindowType.WindowDoesNotAcceptFocus)
+            self.assertEqual(overlay.nativeEvent(b'windows_generic_MSG', ctypes.addressof(message)), (True, 3))
+            if isinstance(overlay, FloatingButton):
+                scans = QSignalSpy(overlay.scan)
+                QTest.mouseClick(overlay, Qt.MouseButton.LeftButton)
+                self.assertEqual(scans.count(), 1)
+            overlay.close()
 
     def test_results_expand_to_content_and_scroll_only_past_screen_limit(self):
         from star_savior.floating import FloatingResults

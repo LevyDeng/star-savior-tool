@@ -459,8 +459,9 @@ class MainWindow(QMainWindow):
             self.show_scan_status(self.t('no_data'))
         elif state == 'unknown':
             self.show_scan_status(self.t('result', seconds=elapsed, reason=self.t(state)))
-        elif state == 'matched':
-            self.show_scan_status(self.t('result', seconds=elapsed, reason=self.t(state)))
+        elif state == 'matched' or len(self.candidates) == 1:
+            message = 'matched' if state == 'matched' else 'single_candidate'
+            self.show_scan_status(self.t('result', seconds=elapsed, reason=self.t(message)))
             self.show_effects(self.candidates[0].event)
         else:
             self.show_scan_status(self.t('result', seconds=elapsed, reason=self.t(state)))

@@ -4,9 +4,24 @@ from PySide6.QtGui import QColor, QGuiApplication, QPainter, QPen
 from PySide6.QtWidgets import QApplication, QDialog, QLabel, QListWidget, QMenu, QTextBrowser, QVBoxLayout, QWidget
 from .i18n import tr
 from .presentation import ResultPanel, THEME
+from . import windows
 
 
-class FloatingButton(QWidget):
+class NonActivatingWindow:
+    """Prevent native click activation for both overlay windows."""
+
+    def nativeEvent(self, event_type, message):
+        result = windows.mouse_activation_result(message)
+        if result is not None:
+            return True, result
+        return super().nativeEvent(event_type, message)
+
+    def showEvent(self, event):
+        windows.make_nonactivating(int(self.winId()))
+        super().showEvent(event)
+
+
+class FloatingButton(NonActivatingWindow, QWidget):
     scan = Signal()
     controls = Signal()
     quit_requested = Signal()
@@ -86,11 +101,12 @@ class FloatingButton(QWidget):
             self.quit_requested.emit()
 
 
-class FloatingResults(QDialog):
+class FloatingResults(NonActivatingWindow, QDialog):
     candidate_chosen = Signal(int)
 
     def __init__(self, parent=None):
-        super().__init__(parent, Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint)
+        super().__init__(parent, Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint |
+                         Qt.WindowType.WindowDoesNotAcceptFocus)
         self.setWindowTitle('StarSavior · 事件效果')
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.setAttribute(Qt.WidgetAttribute.WA_QuitOnClose, False)

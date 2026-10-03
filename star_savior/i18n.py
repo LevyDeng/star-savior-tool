@@ -58,6 +58,7 @@ _rows = {
  'unknown': ('未找到匹配事件。', '找不到符合的事件。', 'No matching event.', '一致するイベントがありません。', '일치하는 이벤트가 없습니다.'),
  'confirm': ('标题或选项不足以确定事件，请选择候选并核对。', '標題或選項不足以確定事件，請選擇候選並核對。', 'Title or choices are ambiguous. Confirm a candidate.', '候補を選んで内容を確認してください。', '제목 또는 선택지가 모호합니다. 후보를 확인하세요.'),
  'matched': ('事件已匹配，请核对当前条件和选项。', '事件已符合，請核對目前條件與選項。', 'Event matched. Check current conditions and choices.', 'イベント一致。条件と選択肢を確認してください。', '이벤트 일치. 현재 조건과 선택지를 확인하세요.'),
+ 'single_candidate': ('已自动显示唯一候选，请核对当前条件和选项。', '已自動顯示唯一候選，請核對目前條件與選項。', 'Showing the only candidate. Check current conditions and choices.', '唯一の候補を表示しました。条件と選択肢を確認してください。', '유일한 후보를 표시했습니다. 현재 조건과 선택지를 확인하세요.'),
  'POWER': ('力量', '力量', 'Strength', '力', '힘'),
  'HEALTH': ('体力', '體力', 'Vitality', '体力', '체력'),
  'ENDURANCE': ('韧性', '韌性', 'Endurance', '忍耐', '인내'),

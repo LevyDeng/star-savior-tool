@@ -4,9 +4,14 @@ import sys
 import traceback
 from pathlib import Path
 
+from star_savior.processes import install_windowed_process_policy
+
+install_windowed_process_policy()
+
 
 def self_test(directory):
     import json
+    import subprocess
     from PIL import Image, ImageDraw
     from PySide6.QtWidgets import QApplication
     from star_savior.app import MainWindow
@@ -14,6 +19,14 @@ def self_test(directory):
     from star_savior.ocr import recognize
 
     directory.mkdir(parents=True, exist_ok=True)
+    # A console executable launched by the windowed app must have no console.
+    probe = '''Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices;
+public class ConsoleProbe { [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow(); }';
+[ConsoleProbe]::GetConsoleWindow().ToInt64()'''
+    console_handle = int(subprocess.check_output(
+        ['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', probe], text=True).strip())
+    if getattr(sys, 'frozen', False) and console_handle:
+        raise RuntimeError('An auxiliary process created a console window')
     app = QApplication([])
     window = MainWindow(directory)
     window.show()
@@ -25,7 +38,8 @@ def self_test(directory):
         raise RuntimeError('Packaged English OCR did not recognize the test image')
     window.grab().save(str(directory / 'window.png'))
     window.close()
-    (directory / 'report.json').write_text(json.dumps({'ok': True, 'ocr': results}, indent=2), encoding='utf-8')
+    (directory / 'report.json').write_text(json.dumps(
+        {'ok': True, 'child_console_handle': console_handle, 'ocr': results}, indent=2), encoding='utf-8')
 
 
 if __name__ == '__main__':
