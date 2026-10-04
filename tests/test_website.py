@@ -25,6 +25,24 @@ def snapshot():
 
 
 class WebsiteTests(unittest.TestCase):
+    def test_card_identity_and_catalog_survive_cache_reload(self):
+        raw = snapshot()
+        raw['arcanas'][0]['events'] = [copy.deepcopy(raw['journeys']['Afternoon'][0])]
+        for language in LANGUAGES:
+            events = convert(raw, language)
+            self.assertIsNone(events[0].card_id)
+            self.assertEqual(events[1].card_id, 99)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'website.sqlite3'
+            store = WebsiteStore(path)
+            self.assertEqual(store.cards(), [])
+            store.replace(raw)
+            store.db.close()
+            reopened = WebsiteStore(path)
+            self.assertEqual(reopened.cards(), raw['arcanas'])
+            self.assertEqual(reopened.load()[1].card_id, 99)
+            reopened.db.close()
+
     def test_difficulty_filters_conditions_and_scales_only_potential_points(self):
         raw = snapshot()
         template = raw['journeys']['Afternoon'][0]

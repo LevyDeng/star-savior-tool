@@ -25,6 +25,7 @@ class FloatingButton(NonActivatingWindow, QWidget):
     scan = Signal()
     controls = Signal()
     quit_requested = Signal()
+    release_models_requested = Signal()
     moved = Signal(QPoint)
 
     def __init__(self, parent=None):
@@ -93,7 +94,9 @@ class FloatingButton(NonActivatingWindow, QWidget):
     def contextMenuEvent(self, event):
         menu = QMenu(self)
         controls = menu.addAction(tr('settings', self.language))
+        release_models = menu.addAction(tr('release_models', self.language))
         quit_action = menu.addAction(tr('quit', self.language))
+        release_models.triggered.connect(lambda checked=False: self.release_models_requested.emit())
         action = menu.exec(event.globalPos())
         if action == controls:
             self.controls.emit()

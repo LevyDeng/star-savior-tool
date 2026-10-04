@@ -55,6 +55,108 @@ class UITests(unittest.TestCase):
             self.assertEqual(window.candidate_list.count(), 0)
             window.close()
 
+    def test_card_result_selects_correct_effect_and_failure_keeps_candidates(self):
+        from unittest.mock import patch
+        from star_savior.core import Event, Option
+        events = [Event('Shared event', str(i), 'Test', [Option(1, 'Pet the cat', f'Strength +{i}')],
+                        display_source=f'Card {i}', card_id=i) for i in (1, 2)]
+        recognition = {'title': ['Shared event'], 'options': ['Pet the cat']}
+        with tempfile.TemporaryDirectory() as directory:
+            window = MainWindow(Path(directory))
+            window.language_list.setCurrentIndex(window.language_list.findData('en-US'))
+            with patch.object(window.store, 'load', return_value=events), patch.object(
+                    window.store, 'cards', return_value=[{'id': 2, 'name': {'en-US': 'Card Two'}}]):
+                window.ocr_finished({**recognition, 'card_match': {'status': 'matched', 'card_id': 2}}, .3)
+                self.assertIn('Strength +2', window.effects.toPlainText())
+                self.assertNotIn('Strength +1', window.effects.toPlainText())
+                self.assertIn('card image', window.status.text())
+                self.assertIn('Card Two', window.status.text())
+                self.assertIn('Support card identified: Card Two', window.ocr_text.toPlainText())
+                self.assertNotIn('Card image diagnostics', window.ocr_text.toPlainText())
+                self.assertNotIn('"card_id"', window.ocr_text.toPlainText())
+                self.assertEqual(window.candidate_list.count(), 0)
+                window.clear_results()
+                window.ocr_finished({**recognition, 'card_match': {'status': 'unavailable'}}, .3)
+                self.assertEqual(window.effects.toPlainText(), '')
+                self.assertEqual(window.candidate_list.count(), 2)
+                self.assertIn('unavailable', window.status.text())
+                self.assertIn('Support card identified: Unreadable', window.ocr_text.toPlainText())
+            window.close()
+
+    def test_card_worker_only_downloads_ambiguous_card_candidates(self):
+        from unittest.mock import patch
+        from PIL import Image
+        from star_savior.app import OCRWorker
+        from star_savior.core import Event, Option
+        from star_savior.layout import DEFAULT_REGIONS
+        events = [Event('Shared event', str(i), 'Test', [Option(1, 'Rest', 'Stamina +1')], card_id=i)
+                  for i in (1, 2)]
+        cards = [{'id': i, 'name': {'ko-KR': f'Card {i}'}} for i in (1, 2, 3)]
+        results = []
+        worker = OCRWorker(Image.new('RGB', (2000, 1250)), DEFAULT_REGIONS, 'en-US', events, cards, Path('unused'))
+        worker.result.connect(lambda value, elapsed: results.append(value))
+        with patch('star_savior.ocr.recognize_regions', return_value=({'title': ['Shared event'], 'options': ['Rest']}, .1)), \
+                patch('star_savior.cards.resolve_card', return_value={'status': 'matched', 'card_id': 2}) as resolve:
+            worker.run()
+            self.assertEqual([c['id'] for c in resolve.call_args.args[1]], [1, 2])
+            self.assertEqual(results[-1]['card_match']['card_id'], 2)
+            worker.events = events[:1]
+            resolve.reset_mock()
+            worker.run()
+            resolve.assert_not_called()
+
+    def test_legacy_regions_keep_custom_title_and_add_default_card(self):
+        import json
+        from star_savior.layout import DEFAULT_REGIONS
+        with tempfile.TemporaryDirectory() as directory:
+            window = MainWindow(Path(directory))
+            legacy = {'title': (.1, .2, .3, .4), 'options': (.5, .6, .8, .9)}
+            window.window_list.addItem('Legacy game', 4242)
+            window.settings.setValue('event_regions/Legacy game', json.dumps(legacy))
+            window.window_list.setCurrentIndex(window.window_list.count() - 1)
+            self.assertEqual(tuple(window.regions['title']), legacy['title'])
+            self.assertEqual(tuple(window.regions['card']), DEFAULT_REGIONS['card'])
+            window.close()
+
+    def test_capture_busy_guard_and_short_cooldown_prevent_repeated_work(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            window = MainWindow(Path(directory))
+            window.window_list.addItem('Test game', 4242)
+            window.window_list.setCurrentIndex(window.window_list.count() - 1)
+            with patch('star_savior.app.windows.activate') as activate, \
+                    patch('star_savior.app.QTimer.singleShot') as schedule, \
+                    patch('star_savior.app.time.monotonic', return_value=100):
+                window.prepare_capture(False)
+                window.prepare_capture(False)
+                self.assertEqual(activate.call_count, 1)
+                window.worker_finished()
+                window.prepare_capture(False)
+                self.assertEqual(activate.call_count, 1)
+                self.assertEqual(schedule.call_count, 1)
+            with patch('star_savior.app.windows.activate') as activate, \
+                    patch('star_savior.app.QTimer.singleShot'), \
+                    patch('star_savior.app.time.monotonic', return_value=101):
+                window.prepare_capture(False)
+                activate.assert_called_once_with(4242)
+            window.worker_finished()
+            window.close()
+
+    def test_release_models_does_not_interrupt_recognition(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            window = MainWindow(Path(directory))
+            window.language_list.setCurrentIndex(window.language_list.findData('en-US'))
+            with patch('star_savior.ocr.release_models', return_value=True) as release:
+                window.busy = True
+                window.release_model_memory()
+                release.assert_not_called()
+                window.busy = False
+                window.release_model_memory()
+                release.assert_called_once()
+                self.assertIn('Model memory released', window.status.text())
+            window.close()
+
     def test_difficulty_refreshes_results_and_persists(self):
         from unittest.mock import patch
         from star_savior.core import Event, Option

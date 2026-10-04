@@ -27,6 +27,7 @@ class Event:
     options: list[Option] = field(default_factory=list)
     display_phase: str | None = None
     display_source: str | None = None
+    card_id: int | None = None
 
     @property
     def visible_phase(self):

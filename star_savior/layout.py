@@ -3,11 +3,13 @@
 DEFAULT_REGIONS = {
     'title': (0.115, 0.155, 0.250, 0.230),
     'options': (0.655, 0.480, 0.995, 0.835),
+    'card': (0.030, 0.110, 0.115, 0.270),
 }
 
 
 def valid_regions(regions):
-    if not isinstance(regions, dict) or set(regions) != {'title', 'options'}:
+    if not isinstance(regions, dict) or set(regions) not in (
+            {'title', 'options'}, {'title', 'options', 'card'}):
         return False
     for region in regions.values():
         if not isinstance(region, (list, tuple)) or len(region) != 4:

@@ -118,7 +118,7 @@ def convert(raw, language, difficulty='Normal'):
 
     events = []
 
-    def add(variants, source, display_source):
+    def add(variants, source, display_source, card_id=None):
         grouped = {}
         for variant in variants:
             tiers = [localized(value, 'en-US') for value in variant.get('difficulties') or []]
@@ -154,14 +154,14 @@ def convert(raw, language, difficulty='Normal'):
             phase = ' | '.join(str(v['id']) for v in versions)
             visible_phase = ' | '.join(dict.fromkeys(localized_phase(time, language)
                 for variant in versions for time in variant.get('times') or []))
-            events.append(Event(title, phase, source, options, visible_phase, display_source))
+            events.append(Event(title, phase, source, options, visible_phase, display_source, card_id))
 
     for key, variants in raw['journeys'].items():
         add(variants, 'Website / Journey / ' + str(variants[0]['id']), tr('journey_source', language))
     for card in raw['arcanas']:
         for event in card['events']:
             add([event], 'Website / Arcana / ' + localized(card['name'], language) + ' / ' + str(card['id']),
-                tr('arcana_source', language, card=localized(card['name'], language)))
+                tr('arcana_source', language, card=localized(card['name'], language)), card['id'])
     issues = validate(events) if events else []
     if issues:
         raise ValueError('\n'.join(issues))
@@ -190,6 +190,11 @@ class WebsiteStore:
     def updated(self):
         row = self.db.execute('SELECT updated FROM website WHERE id=1').fetchone()
         return row[0] if row else 'Never'
+
+    def cards(self):
+        """Return the synchronized card catalog without sharing SQLite across threads."""
+        row = self.db.execute('SELECT payload FROM website WHERE id=1').fetchone()
+        return json.loads(row[0])['arcanas'] if row else []
 
     def replace(self, raw):
         converted = {(language, difficulty): convert(raw, language, difficulty)

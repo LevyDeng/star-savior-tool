@@ -14,6 +14,7 @@ def self_test(directory):
     import subprocess
     from PIL import Image, ImageDraw
     from PySide6.QtWidgets import QApplication
+    from PySide6.QtGui import QFont, QFontDatabase
     from star_savior.app import MainWindow
     from star_savior.i18n import LANGUAGES
     from star_savior.ocr import recognize
@@ -28,6 +29,10 @@ public class ConsoleProbe { [DllImport("kernel32.dll")] public static extern Int
     if getattr(sys, 'frozen', False) and console_handle:
         raise RuntimeError('An auxiliary process created a console window')
     app = QApplication([])
+    font = Path(r'C:\Windows\Fonts\msyh.ttc')
+    if font.exists():
+        QFontDatabase.addApplicationFont(str(font))
+        app.setFont(QFont('Microsoft YaHei', 10))
     window = MainWindow(directory)
     window.show()
     app.processEvents()
@@ -36,10 +41,34 @@ public class ConsoleProbe { [DllImport("kernel32.dll")] public static extern Int
     results = {language: recognize(image, language)[0] for language in LANGUAGES}
     if not any('Star' in line for line in results['en-US']):
         raise RuntimeError('Packaged English OCR did not recognize the test image')
+    card_result = None
+    card_probe = directory / 'card-probe.json'
+    if card_probe.exists():
+        from star_savior.app import OCRWorker
+        probe_config = json.loads(card_probe.read_text(encoding='utf-8'))
+        captures, errors = [], []
+        with Image.open(directory / 'card-probe.png') as frame:
+            worker = OCRWorker(frame.convert('RGB'), window.regions, window.language,
+                               window.store.load(), window.store.cards(), window.card_cache_dir)
+        worker.result.connect(lambda value, elapsed: captures.append((value, elapsed)))
+        worker.failed.connect(errors.append)
+        worker.run()
+        if errors or not captures:
+            raise RuntimeError(f'Packaged card recognition failed: {errors}')
+        value, elapsed = captures[0]
+        card_result = value.get('card_match')
+        if not card_result or card_result.get('card_id') != probe_config['expected_card_id']:
+            raise RuntimeError(f'Unexpected card match: {card_result}')
+        window.ocr_finished(value, elapsed)
+        if len(window.candidates) != 1 or window.candidates[0].event.card_id != probe_config['expected_card_id']:
+            raise RuntimeError('Card match did not select the expected event')
+        app.processEvents()
+        window.floating_results.grab().save(str(directory / 'card-result.png'))
     window.grab().save(str(directory / 'window.png'))
     window.close()
     (directory / 'report.json').write_text(json.dumps(
-        {'ok': True, 'child_console_handle': console_handle, 'ocr': results}, indent=2), encoding='utf-8')
+        {'ok': True, 'child_console_handle': console_handle, 'ocr': results,
+         'card_match': card_result}, indent=2), encoding='utf-8')
 
 
 if __name__ == '__main__':

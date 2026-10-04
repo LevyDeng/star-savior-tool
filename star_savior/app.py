@@ -4,17 +4,18 @@ import json
 import os
 import sys
 import ctypes
+import time
 from html import escape
 from ctypes import wintypes
 from pathlib import Path
 from datetime import datetime
 from PySide6.QtCore import QAbstractNativeEventFilter, QSettings, QStandardPaths, QThread, QTimer, QUrl, Qt, Signal, QRect, QPoint
 from PySide6.QtGui import QDesktopServices, QFont, QImage, QPainter, QPixmap
-from PySide6.QtWidgets import QApplication, QComboBox, QDialog, QHBoxLayout, QLabel, QListWidget, QMainWindow, QPushButton, QRubberBand, QTextBrowser, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QHBoxLayout, QLabel, QListWidget, QMainWindow, QMessageBox, QPushButton, QRubberBand, QTextBrowser, QVBoxLayout, QWidget
 from .core import match_regions
 from .layout import DEFAULT_REGIONS, valid_regions
 from .floating import FloatingButton, FloatingResults
-from .website import DIFFICULTIES, SOURCE_URL, WebsiteStore, download
+from .website import DIFFICULTIES, SOURCE_URL, WebsiteStore, download, localized
 from .i18n import LANGUAGES, tr
 from .presentation import THEME
 from . import windows
@@ -73,18 +74,40 @@ class RegionDialog(QDialog):
 class OCRWorker(QThread):
     result = Signal(object, float)
     failed = Signal(str)
+    progress = Signal(str)
 
-    def __init__(self, image, regions, language='zh-CN'):
+    def __init__(self, image, regions, language='zh-CN', events=None, cards=None, cache_dir=None):
         super().__init__()
         self.image = image
         self.regions = regions
         self.language = language
+        self.events = events or []
+        self.cards = cards or []
+        self.cache_dir = cache_dir
 
     def run(self):
         try:
+            started = time.perf_counter()
             from .ocr import recognize_regions
             result, elapsed = recognize_regions(self.image, self.regions, self.language)
-            self.result.emit(result, elapsed)
+            state, candidates, _ = match_regions(self.events, result['title'], result['options'])
+            card_ids = {candidate.event.card_id for candidate in candidates if candidate.event.card_id is not None}
+            if state != 'matched' and len(card_ids) > 1 and self.cache_dir is not None:
+                self.progress.emit(tr('card_busy', self.language))
+                from .cards import resolve_card
+                from .layout import crop_regions
+                catalog = [card for card in self.cards if card['id'] in card_ids]
+                if {card['id'] for card in catalog} != card_ids:
+                    result['card_match'] = {'status': 'unavailable', 'failures': [], 'matches': []}
+                else:
+                    try:
+                        regions = {**DEFAULT_REGIONS, **self.regions}
+                        result['card_match'] = resolve_card(
+                            crop_regions(self.image, regions)['card'], catalog, self.cache_dir)
+                    except Exception as exc:
+                        result['card_match'] = {'status': 'unavailable', 'matches': [],
+                                                'failures': [{'error': str(exc)}]}
+            self.result.emit(result, time.perf_counter() - started)
         except Exception as exc:
             self.failed.emit(tr('ocr_failed', self.language, error=exc))
 
@@ -115,6 +138,7 @@ class MainWindow(QMainWindow):
         self.resize(820, 410)
         self.setStyleSheet(THEME)
         self.store = WebsiteStore(data_dir / 'website.sqlite3')
+        self.card_cache_dir = data_dir / 'card_images'
         self.settings = QSettings(str(data_dir / 'settings.ini'), QSettings.Format.IniFormat)
         self.language = self.settings.value('language', 'zh-CN')
         if self.language not in LANGUAGES:
@@ -131,11 +155,13 @@ class MainWindow(QMainWindow):
         self.worker = None
         self.candidates = []
         self.busy = False
+        self.capture_allowed_at = 0.0
         self.floating_mode = False
         self.floating_button = FloatingButton(self)
         self.floating_button.scan.connect(lambda: self.prepare_capture(False))
         self.floating_button.controls.connect(self.open_controls)
         self.floating_button.quit_requested.connect(self.exit_floating)
+        self.floating_button.release_models_requested.connect(self.release_model_memory)
         self.floating_button.moved.connect(lambda position: self.settings.setValue('floating_position', position))
         self.floating_results = FloatingResults(self)
         self.floating_results.candidate_chosen.connect(self.confirm_candidate)
@@ -198,6 +224,14 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.status)
         layout.addStretch(1)
         row = QHBoxLayout()
+        self.release_button = self.button('release_models', self.release_model_memory)
+        row.addWidget(self.release_button)
+        self.auto_release_models = QCheckBox(self.t('auto_release_models'))
+        self.auto_release_models.setChecked(self.settings.value('auto_release_models', False, type=bool))
+        self.auto_release_models.toggled.connect(
+            lambda enabled: self.settings.setValue('auto_release_models', enabled))
+        self.translatable.append((self.auto_release_models, 'auto_release_models'))
+        row.addWidget(self.auto_release_models)
         row.addStretch(1)
         self.start_button = self.button('start', self.enable_floating)
         self.start_button.setObjectName('startButton')
@@ -340,7 +374,7 @@ class MainWindow(QMainWindow):
         raw = self.settings.value('event_regions/' + title, '')
         try:
             regions = json.loads(raw) if raw else None
-            self.regions = regions if valid_regions(regions) else dict(DEFAULT_REGIONS)
+            self.regions = {**DEFAULT_REGIONS, **regions} if valid_regions(regions) else dict(DEFAULT_REGIONS)
         except (ValueError, TypeError):
             self.regions = dict(DEFAULT_REGIONS)
         if self.window_list.currentData():
@@ -383,14 +417,23 @@ class MainWindow(QMainWindow):
         self.candidates = []
         self.floating_results.clear_results()
 
+    def release_model_memory(self):
+        if self.busy or (self.worker and self.worker.isRunning()):
+            self.show_scan_status(self.t('models_busy'))
+            return
+        from .ocr import release_models
+        message = 'models_released' if release_models() else 'models_busy'
+        self.show_scan_status(self.t(message))
+
     def prepare_capture(self, selecting):
-        if self.busy or QApplication.activeModalWidget():
+        if self.busy or QApplication.activeModalWidget() or time.monotonic() < self.capture_allowed_at:
             return
         self.clear_results()
         hwnd = self.window_list.currentData()
         if not hwnd:
             self.status.setText(self.t('choose_first'))
             return
+        self.capture_allowed_at = time.monotonic() + .8
         self.busy = True
         self.floating_button.set_busy(True)
         self.hide()
@@ -412,7 +455,7 @@ class MainWindow(QMainWindow):
             self.restore_capture_ui()
             if selecting:
                 regions = {}
-                for name, label in (('title', 'title_area'), ('options', 'options_area')):
+                for name, label in (('title', 'title_area'), ('options', 'options_area'), ('card', 'card_area')):
                     dialog = RegionDialog(image, self, label)
                     if dialog.exec() != QDialog.DialogCode.Accepted:
                         break
@@ -435,7 +478,9 @@ class MainWindow(QMainWindow):
         self.busy = True
         self.floating_button.set_busy(True)
         self.status.setText(self.t('ocr_busy'))
-        self.worker = OCRWorker(image, dict(self.regions), self.language)
+        self.worker = OCRWorker(image, dict(self.regions), self.language,
+                                self.store.load(), self.store.cards(), self.card_cache_dir)
+        self.worker.progress.connect(self.status.setText)
         self.worker.result.connect(self.ocr_finished)
         self.worker.failed.connect(self.ocr_failed)
         self.worker.finished.connect(self.worker_finished)
@@ -444,6 +489,9 @@ class MainWindow(QMainWindow):
     def worker_finished(self):
         self.busy = False
         self.floating_button.set_busy(False)
+        if self.auto_release_models.isChecked():
+            from .ocr import release_models
+            release_models()
 
     def ocr_failed(self, error):
         self.show_scan_status(error)
@@ -455,16 +503,34 @@ class MainWindow(QMainWindow):
         self.ocr_text.setPlainText(recognized)
         events = self.store.load()
         state, self.candidates, reason = match_regions(events, title, options)
+        card_match = result.get('card_match', {})
+        card_selected = False
+        card_name = ''
+        if card_match.get('status') == 'matched':
+            filtered = [candidate for candidate in self.candidates
+                        if candidate.event.card_id == card_match.get('card_id')]
+            if filtered:
+                self.candidates = filtered
+                card_selected = len(filtered) == 1
+                card_name = next((localized(card['name'], self.language)
+                                  for card in self.store.cards() if card['id'] == card_match.get('card_id')), '')
+                card_name = card_name or filtered[0].event.visible_source
+        if card_match:
+            self.ocr_text.setPlainText(recognized + '\n\n' + self.t(
+                'identified_card', card=card_name or self.t('unreadable')))
         if not events:
             self.show_scan_status(self.t('no_data'))
         elif state == 'unknown':
             self.show_scan_status(self.t('result', seconds=elapsed, reason=self.t(state)))
         elif state == 'matched' or len(self.candidates) == 1:
-            message = 'matched' if state == 'matched' else 'single_candidate'
-            self.show_scan_status(self.t('result', seconds=elapsed, reason=self.t(message)))
+            message = 'card_matched' if card_selected else ('matched' if state == 'matched' else 'single_candidate')
+            self.show_scan_status(self.t('result', seconds=elapsed, reason=self.t(message, card=card_name)))
             self.show_effects(self.candidates[0].event)
         else:
-            self.show_scan_status(self.t('result', seconds=elapsed, reason=self.t(state)))
+            message = self.t(state)
+            if card_match.get('status') in ('uncertain', 'unavailable'):
+                message = self.t('card_' + card_match['status'])
+            self.show_scan_status(self.t('result', seconds=elapsed, reason=message))
             for candidate in self.candidates:
                 label = ' | '.join(value for value in (candidate.event.title, candidate.event.visible_phase,
                     candidate.event.visible_source, f'{candidate.score:.2f}') if value)
@@ -517,8 +583,19 @@ def main():
     if os.environ.get('STAR_SAVIOR_DATA_DIR'):
         data_dir = Path(os.environ['STAR_SAVIOR_DATA_DIR'])
     data_dir.mkdir(parents=True, exist_ok=True)
-    window = MainWindow(data_dir)
-    window.show()
-    if not window.store.load():
-        QTimer.singleShot(0, window.sync)
-    app.exec()
+    from .instance import SingleInstance
+    instance = SingleInstance()
+    if not instance.acquire():
+        language = QSettings(str(data_dir / 'settings.ini'), QSettings.Format.IniFormat).value('language', 'zh-CN')
+        if language not in LANGUAGES:
+            language = 'zh-CN'
+        QMessageBox.information(None, 'StarSavior', tr('already_running', language))
+        return
+    try:
+        window = MainWindow(data_dir)
+        window.show()
+        if not window.store.load():
+            QTimer.singleShot(0, window.sync)
+        app.exec()
+    finally:
+        instance.close()

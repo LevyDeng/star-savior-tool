@@ -1,9 +1,22 @@
 """Local OCR adapter with no UI or platform dependencies."""
 import threading
 import time
+import gc
 
 _engines = {}
 _lock = threading.Lock()
+
+
+def release_models():
+    """Release cached sessions without interrupting an active inference."""
+    if not _lock.acquire(blocking=False):
+        return False
+    try:
+        _engines.clear()
+        gc.collect()
+        return True
+    finally:
+        _lock.release()
 
 
 def recognize_regions(image, regions, language='zh-CN'):
@@ -30,10 +43,18 @@ def recognize_boxes(image, language='zh-CN'):
     started = time.perf_counter()
     with _lock:
         if language not in _engines:
+            # Retain only one language's sessions; downloaded models remain cached.
+            _engines.clear()
+            gc.collect()
             codes = {'zh-CN': LangRec.CH, 'zh-TW': LangRec.CHINESE_CHT, 'en-US': LangRec.EN,
                      'ja-JP': LangRec.JAPAN, 'ko-KR': LangRec.KOREAN}
-            params = {} if language == 'zh-CN' else {'Rec.lang_type': codes[language],
-                'Rec.ocr_version': OCRVersion.PPOCRV4, 'Rec.model_type': ModelType.MOBILE}
+            params = {'EngineConfig.onnxruntime.use_cuda': False,
+                      'EngineConfig.onnxruntime.use_dml': False,
+                      'EngineConfig.onnxruntime.use_cann': False,
+                      'EngineConfig.onnxruntime.use_coreml': False}
+            if language != 'zh-CN':
+                params.update({'Rec.lang_type': codes[language],
+                               'Rec.ocr_version': OCRVersion.PPOCRV4, 'Rec.model_type': ModelType.MOBILE})
             _engines[language] = RapidOCR(params=params)
         output = _engines[language](np.asarray(image.convert('RGB')))
     items = []
