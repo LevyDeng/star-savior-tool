@@ -121,6 +121,7 @@ class ResultPanel(QScrollArea):
         self.candidates = QListWidget()
         self.candidates.setFixedHeight(130)
         self.candidate_section = FoldSection(self.candidates)
+        self.candidate_section.hide()
         self.body_layout.addWidget(self.candidate_section)
         self.details = ContentBrowser()
         self.detail_section = FoldSection(self.details)
@@ -133,6 +134,8 @@ class ResultPanel(QScrollArea):
         self.timer = QTimer(self)
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.height_changed.emit)
+        self.language = 'zh-CN'
+        self.candidate_count = 0
         self.set_language('zh-CN')
 
     def schedule_fit(self):
@@ -144,14 +147,29 @@ class ResultPanel(QScrollArea):
         return self.body_layout.sizeHint().height() + 4
 
     def set_language(self, language):
+        self.language = language
         self.effect_label.setText(tr('effects', language))
-        self.candidate_section.toggle.setText(tr('candidates', language))
+        self._update_candidate_label()
         self.detail_section.toggle.setText(tr('text', language))
         self.schedule_fit()
+
+    def set_candidate_count(self, count):
+        self.candidate_count = max(0, int(count))
+        self._update_candidate_label()
+        self.candidate_section.setVisible(self.candidate_count > 1)
+        self.schedule_fit()
+
+    def _update_candidate_label(self):
+        if self.candidate_count > 1:
+            text = tr('candidates_count', self.language, count=self.candidate_count)
+        else:
+            text = tr('candidates', self.language)
+        self.candidate_section.toggle.setText(text)
 
     def clear_results(self):
         self.status.clear()
         self.candidates.clear()
+        self.set_candidate_count(0)
         self.effects.clear()
         self.effects.setToolTip('')
         self.details.clear()

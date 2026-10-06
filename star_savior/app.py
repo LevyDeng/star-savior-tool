@@ -522,21 +522,28 @@ class MainWindow(QMainWindow):
             self.show_scan_status(self.t('no_data'))
         elif state == 'unknown':
             self.show_scan_status(self.t('result', seconds=elapsed, reason=self.t(state)))
-        elif state == 'matched' or len(self.candidates) == 1:
-            message = 'card_matched' if card_selected else ('matched' if state == 'matched' else 'single_candidate')
+        elif self.candidates:
+            candidate_count = len(self.candidates)
+            self.floating_results.set_candidate_count(candidate_count)
+            if candidate_count > 1:
+                for candidate in self.candidates:
+                    label = ' | '.join(value for value in (candidate.event.title, candidate.event.visible_phase,
+                        candidate.event.visible_source, f'{candidate.score:.2f}') if value)
+                    self.candidate_list.addItem(label)
+                    details = f'{candidate.event.phase}\n{candidate.event.source}'
+                    self.candidate_list.item(self.candidate_list.count() - 1).setToolTip(details)
+                self.candidate_list.setCurrentRow(0)
+                if card_match.get('status') in ('uncertain', 'unavailable'):
+                    message = self.t('card_' + card_match['status'])
+                else:
+                    message = self.t('top_candidate', count=candidate_count)
+            else:
+                message = ('card_matched' if card_selected else
+                           ('matched' if state == 'matched' else 'single_candidate'))
             self.show_scan_status(self.t('result', seconds=elapsed, reason=self.t(message, card=card_name)))
             self.show_effects(self.candidates[0].event)
         else:
-            message = self.t(state)
-            if card_match.get('status') in ('uncertain', 'unavailable'):
-                message = self.t('card_' + card_match['status'])
-            self.show_scan_status(self.t('result', seconds=elapsed, reason=message))
-            for candidate in self.candidates:
-                label = ' | '.join(value for value in (candidate.event.title, candidate.event.visible_phase,
-                    candidate.event.visible_source, f'{candidate.score:.2f}') if value)
-                self.candidate_list.addItem(label)
-                details = f'{candidate.event.phase}\n{candidate.event.source}'
-                self.candidate_list.item(self.candidate_list.count() - 1).setToolTip(details)
+            self.show_scan_status(self.t('result', seconds=elapsed, reason=self.t('unknown')))
 
     def confirm_candidate(self, index):
         if not 0 <= index < len(self.candidates):

@@ -135,6 +135,9 @@ class FloatingResults(NonActivatingWindow, QDialog):
     def clear_results(self):
         self.panel.clear_results()
 
+    def set_candidate_count(self, count):
+        self.panel.set_candidate_count(count)
+
     def fit_height(self):
         screen = QGuiApplication.screenAt(self.frameGeometry().center()) or QGuiApplication.primaryScreen()
         area = screen.availableGeometry()
