@@ -20,7 +20,7 @@ Tencent Docs, login, spreadsheet imports, copied tables, guide screenshot OCR, a
 
 ## Website data
 
-The importer downloads the six public JSON resources used by the website: journeys, arcanas, journey items, potentials, stat potentials, and journey buffs. All resources and all five language conversions must validate before the SQLite snapshot changes. Failed requests, invalid data, unknown reward types, and unresolved references preserve the previous cache.
+The importer downloads the six public JSON resources used by the website: journeys, arcanas, journey items, potentials, stat potentials, and journey buffs. Each request allows up to 60 seconds and transient network errors are retried once; a final download error identifies the failed resource. All resources and all five language conversions must validate before the SQLite snapshot changes. Failed requests, invalid data, unknown reward types, and unresolved references preserve the previous cache.
 
 Journey variants with identical ordered choices share an event whose effects retain all variants separately; different choice groups stay distinct. Support-card identities are retained. Conditions/costs, numeric ranges, success/failure outcomes, names/descriptions, and grouped alternatives are preserved. Within a reward group, alternatives are joined with OR; different groups remain separate. No probabilities are inferred. Choose Easy, Normal, or Hard to filter journey variants and apply its 1/1.5/2.5 multiplier to potential points only. Other stats and costs remain unchanged. No-choice automatic events are explicitly labeled.
 

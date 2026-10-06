@@ -1,10 +1,13 @@
 """Public website JSON adapter and transactional multilingual offline cache."""
 import html
+import http.client
 import json
 import re
 import sqlite3
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from .core import Event, Option, validate
@@ -14,18 +17,36 @@ SOURCE_URL = 'https://star-savior-arcana-db.pages.dev/journey'
 BASE_URL = 'https://star-savior-arcana-db.pages.dev/data/'
 FILES = ('journeys', 'arcanas', 'journey_items', 'potentials', 'stat_potentials', 'journey_buffs')
 DIFFICULTIES = {'Easy': 1, 'Normal': 1.5, 'Hard': 2.5}
+REQUEST_TIMEOUT = 60
+MAX_DOWNLOAD_ATTEMPTS = 2
+RETRYABLE_HTTP_STATUS = {408, 429, 500, 502, 503, 504}
 
 
 def download():
     def read(name):
-        request = Request(BASE_URL + name + '.json', headers={'User-Agent': 'StarSaviorGuideDemo/1.0'})
-        with urlopen(request, timeout=25) as response:
-            if response.url != BASE_URL + name + '.json':
-                raise ValueError('Unexpected data redirect')
-            body = response.read(16_000_001)
-            if len(body) > 16_000_000:
-                raise ValueError('Website data exceeds size limit')
-            return json.loads(body.decode('utf-8'))
+        url = BASE_URL + name + '.json'
+        request = Request(url, headers={'User-Agent': 'StarSaviorGuideDemo/1.0'})
+        for attempt in range(1, MAX_DOWNLOAD_ATTEMPTS + 1):
+            try:
+                with urlopen(request, timeout=REQUEST_TIMEOUT) as response:
+                    if response.url != url:
+                        raise ValueError(f'{name}.json returned an unexpected redirect')
+                    body = response.read(16_000_001)
+                    if len(body) > 16_000_000:
+                        raise ValueError(f'{name}.json exceeds the 16 MB size limit')
+                    return json.loads(body.decode('utf-8'))
+            except HTTPError as exc:
+                if exc.code not in RETRYABLE_HTTP_STATUS:
+                    raise RuntimeError(f'{name}.json returned HTTP {exc.code}') from exc
+                error = exc
+            except (URLError, OSError, http.client.HTTPException,
+                    json.JSONDecodeError, UnicodeDecodeError) as exc:
+                error = exc
+            if attempt == MAX_DOWNLOAD_ATTEMPTS:
+                raise RuntimeError(
+                    f'{name}.json download failed after {attempt} attempts: {error}') from error
+            time.sleep(attempt * 2)
+
     with ThreadPoolExecutor(max_workers=3) as pool:
         return dict(zip(FILES, pool.map(read, FILES)))
 

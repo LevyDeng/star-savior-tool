@@ -15,8 +15,20 @@ New-Item -ItemType Directory -Path $stagingDirectory | Out-Null
 try {
     & .\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
     if ($LASTEXITCODE -ne 0) { throw 'Build dependency installation failed' }
-    & .\.venv\Scripts\python.exe -m PyInstaller --noconfirm --distpath $stagingDirectory StarSaviorHelper.spec
-    if ($LASTEXITCODE -ne 0) { throw 'Executable build failed' }
+    $previousPythonUserBase = $env:PYTHONUSERBASE
+    $env:PYTHONUSERBASE = Join-Path $PSScriptRoot '.venv\packaging-userbase'
+    try {
+        & .\.venv\Scripts\python.exe -m PyInstaller --noconfirm --distpath $stagingDirectory StarSaviorHelper.spec
+        if ($LASTEXITCODE -ne 0) { throw 'Executable build failed' }
+    }
+    finally {
+        if ($null -eq $previousPythonUserBase) {
+            Remove-Item Env:PYTHONUSERBASE -ErrorAction SilentlyContinue
+        }
+        else {
+            $env:PYTHONUSERBASE = $previousPythonUserBase
+        }
+    }
     Compress-Archive -Path (Join-Path $stagingDirectory 'StarSaviorHelper') -DestinationPath $stagingArchive -Force
     New-Item -ItemType Directory -Path $releaseDirectory | Out-Null
     Move-Item -LiteralPath $stagingArchive -Destination (Join-Path $releaseDirectory 'StarSaviorHelper-Windows.zip')
