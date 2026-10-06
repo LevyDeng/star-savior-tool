@@ -1,6 +1,14 @@
 """Shared interface and structured-effect vocabulary."""
 LANGUAGES = {'zh-CN': '简体中文', 'zh-TW': '繁體中文', 'en-US': 'English', 'ja-JP': '日本語', 'ko-KR': '한국어'}
 _rows = {
+ 'network_settings': ('代理设置', '代理設定', 'Proxy settings', 'プロキシ設定', '프록시 설정'),
+ 'proxy_hint': ('代理地址（仅攻略同步）：支持 HTTP/HTTPS 代理。留空使用系统默认网络设置。请填写代理软件的 HTTP 或混合端口，不支持 SOCKS 或带账号密码的地址。', '代理位址（僅攻略同步）：支援 HTTP/HTTPS。留空使用系統預設網路設定。請使用 HTTP 或混合連接埠，不支援 SOCKS 或帳號密碼。', 'Proxy for guide sync only: HTTP/HTTPS supported. Leave blank to use default system networking. Use the HTTP or mixed port, not SOCKS or a URL with credentials.', '攻略同期用の HTTP/HTTPS プロキシ。空欄はシステム既定設定。HTTP または混合ポートを使用してください。SOCKS と認証情報付き URL は非対応です。', '공략 동기화용 HTTP/HTTPS 프록시. 비워 두면 시스템 기본 설정을 사용합니다. HTTP 또는 혼합 포트를 사용하세요. SOCKS 및 인증 정보가 있는 URL은 지원하지 않습니다.'),
+ 'skip_tls': ('跳过 SSL 证书校验（不推荐）', '略過 SSL 憑證驗證（不建議）', 'Skip SSL certificate verification (not recommended)', 'SSL 証明書の検証を省略（非推奨）', 'SSL 인증서 검증 건너뛰기 (권장하지 않음)'),
+ 'tls_warning': ('开启后无法验证服务器身份，下载数据可能被篡改。建议先检查电脑时间或代理证书，排障后关闭此选项。此设置只影响攻略同步。', '開啟後無法驗證伺服器身分，下載資料可能被竄改。請先檢查電腦時間或代理憑證，排障後關閉。僅影響攻略同步。', 'Disabling verification prevents server authentication and allows data tampering. Check the computer clock or proxy certificates first and re-enable verification after troubleshooting. Guide sync only.', 'サーバーの身元を確認できず、データが改ざんされる可能性があります。時刻やプロキシ証明書を確認し、問題解決後に検証を有効にしてください。攻略同期のみ対象です。', '서버 신원을 확인할 수 없어 데이터가 변조될 수 있습니다. 먼저 컴퓨터 시간이나 프록시 인증서를 확인하고 문제 해결 후 검증을 다시 켜세요. 공략 동기화에만 적용됩니다.'),
+ 'proxy_invalid': ('代理地址无效。请使用 http://主机:端口 或 https://主机:端口，不含账号密码。', '代理位址無效。請使用 http://主機:連接埠 或 https://主機:連接埠，不含帳號密碼。', 'Invalid proxy. Use http://host:port or https://host:port without credentials.', '無効なプロキシ。認証情報なしの http://host:port または https://host:port を使用してください。', '잘못된 프록시입니다. 인증 정보 없이 http://host:port 또는 https://host:port를 사용하세요.'),
+ 'tls_disabled': ('注意：本次同步未校验证书。', '注意：本次同步未驗證憑證。', 'Warning: certificate verification is disabled for this sync.', '注意：この同期では証明書を検証しません。', '주의: 이번 동기화에서 인증서를 검증하지 않습니다.'),
+ 'network_save': ('保存', '儲存', 'Save', '保存', '저장'),
+ 'network_cancel': ('取消', '取消', 'Cancel', 'キャンセル', '취소'),
  'already_running': ('跑马助手已经在运行，请使用已有的悬浮按钮或设置窗口。', '跑馬助手已經在執行，請使用現有的懸浮按鈕或設定視窗。', 'StarSavior helper is already running. Use its floating button or settings window.', 'ツールは既に起動しています。既存のボタンまたは設定を使用してください。', '도구가 이미 실행 중입니다. 기존 플로팅 버튼 또는 설정 창을 사용하세요.'),
  'release_models': ('释放模型内存', '釋放模型記憶體', 'Release model memory', 'モデルのメモリを解放', '모델 메모리 해제'),
  'auto_release_models': ('识别结束自动释放（会降低识别速度）', '辨識結束自動釋放（會降低辨識速度）', 'Release automatically after each scan (slower scans)', '認識後に自動解放（認識速度が低下します）', '인식 후 자동 해제 (인식 속도가 느려집니다)'),

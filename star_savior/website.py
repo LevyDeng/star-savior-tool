@@ -8,10 +8,11 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 from .core import Event, Option, validate
 from .i18n import LANGUAGES, tr
+from .network import sync_opener
 
 SOURCE_URL = 'https://star-savior-arcana-db.pages.dev/journey'
 BASE_URL = 'https://star-savior-arcana-db.pages.dev/data/'
@@ -22,13 +23,14 @@ MAX_DOWNLOAD_ATTEMPTS = 2
 RETRYABLE_HTTP_STATUS = {408, 429, 500, 502, 503, 504}
 
 
-def download():
+def download(proxy_url='', verify_tls=True):
+    opener = sync_opener(proxy_url, verify_tls)
     def read(name):
         url = BASE_URL + name + '.json'
         request = Request(url, headers={'User-Agent': 'StarSaviorGuideDemo/1.0'})
         for attempt in range(1, MAX_DOWNLOAD_ATTEMPTS + 1):
             try:
-                with urlopen(request, timeout=REQUEST_TIMEOUT) as response:
+                with opener.open(request, timeout=REQUEST_TIMEOUT) as response:
                     if response.url != url:
                         raise ValueError(f'{name}.json returned an unexpected redirect')
                     body = response.read(16_000_001)

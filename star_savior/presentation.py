@@ -10,6 +10,13 @@ from .i18n import tr
 THEME = """
 QWidget { color: #223b56; font-family: "Microsoft YaHei UI", "Segoe UI"; font-size: 14px; }
 QMainWindow, QDialog { background: #f1f7fc; }
+QWidget#titleBar { background: #20272d; }
+QLabel#windowTitle { color: #f1f7fc; font-size: 13px; }
+QComboBox#titleLanguage { color: #f1f7fc; background: #303c47; border: 1px solid #506171; border-radius: 5px; padding: 3px 10px; min-height: 18px; font-size: 12px; }
+QComboBox#titleLanguage QAbstractItemView { color: #223b56; }
+QWidget#titleBar QPushButton { color: #f1f7fc; background: transparent; border: none; border-radius: 0; padding: 0; font-size: 19px; }
+QWidget#titleBar QPushButton:hover { background: #3d4b58; }
+QWidget#titleBar QPushButton#closeWindow:hover { background: #c84343; }
 QLabel { background: transparent; }
 QLabel#summary { color: #59758f; padding: 4px 0; }
 QLabel#status { color: #376184; background: #e9f3fd; border: 1px solid #d4e6f6; border-radius: 9px; padding: 10px; }
@@ -25,6 +32,9 @@ QPushButton:disabled { color: #8ba0b2; background: #e8eff5; border-color: #dce6e
 QComboBox { background: white; border: 1px solid #cbdfee; border-radius: 8px; padding: 8px 12px; min-height: 20px; }
 QComboBox::drop-down { border: none; width: 24px; }
 QComboBox QAbstractItemView { background: white; selection-background-color: #deedfb; selection-color: #223b56; }
+QLineEdit { color: #223b56; background: #ffffff; border: 1px solid #cbdfee; border-radius: 8px; padding: 8px 12px; selection-background-color: #cfe5fa; selection-color: #173b60; }
+QLineEdit:focus { border-color: #357db9; background: #ffffff; }
+QLineEdit:disabled { color: #71869a; background: #e8eff5; }
 QTextBrowser, QListWidget { background: #ffffff; border: 1px solid #d5e5f1; border-radius: 10px; padding: 8px; selection-background-color: #d6eafe; selection-color: #173b60; }
 QToolButton { background: #eaf3fb; border: 1px solid #d5e5f1; border-radius: 7px; padding: 8px; text-align: left; }
 QToolButton:hover { background: #dfedfa; }

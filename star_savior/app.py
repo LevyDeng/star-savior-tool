@@ -11,22 +11,29 @@ from pathlib import Path
 from datetime import datetime
 from PySide6.QtCore import QAbstractNativeEventFilter, QSettings, QStandardPaths, QThread, QTimer, QUrl, Qt, Signal, QRect, QPoint
 from PySide6.QtGui import QDesktopServices, QFont, QImage, QPainter, QPixmap
-from PySide6.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QHBoxLayout, QLabel, QListWidget, QMainWindow, QMessageBox, QPushButton, QRubberBand, QTextBrowser, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QMainWindow, QMessageBox, QPushButton, QRubberBand, QTextBrowser, QVBoxLayout, QWidget
 from .core import match_regions
 from .layout import DEFAULT_REGIONS, valid_regions
 from .floating import FloatingButton, FloatingResults
 from .website import DIFFICULTIES, SOURCE_URL, WebsiteStore, download, localized
 from .i18n import LANGUAGES, tr
 from .presentation import THEME
+from .network import validate_proxy
+from .titlebar import TitleBar
 from . import windows
 
 
 class SyncWorker(QThread):
     result = Signal(object)
     failed = Signal(str)
+    def __init__(self, parent=None, proxy_url='', verify_tls=True):
+        super().__init__(parent)
+        self.proxy_url = proxy_url
+        self.verify_tls = verify_tls
+
     def run(self):
         try:
-            self.result.emit(download())
+            self.result.emit(download(self.proxy_url, self.verify_tls))
         except Exception as exc:
             self.failed.emit(str(exc))
 
@@ -134,7 +141,8 @@ class Hotkey(QAbstractNativeEventFilter):
 class MainWindow(QMainWindow):
     def __init__(self, data_dir):
         super().__init__()
-        self.setWindowTitle('StarSavior 跑马助手')
+        self.setWindowTitle('StarSavior')
+        self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
         self.resize(820, 410)
         self.setStyleSheet(THEME)
         self.store = WebsiteStore(data_dir / 'website.sqlite3')
@@ -188,14 +196,16 @@ class MainWindow(QMainWindow):
         row.addWidget(self.sync_button, 1)
         row.addWidget(self.button('website', lambda: QDesktopServices.openUrl(QUrl(SOURCE_URL))), 1)
         layout.addLayout(row)
-        row = QHBoxLayout()
-        row.addWidget(self.label('language'))
+        self.network_button = self.button('network_settings', self.configure_network)
         self.language_list = QComboBox()
         for code, name in LANGUAGES.items():
             self.language_list.addItem(name, code)
         self.language_list.setCurrentIndex(self.language_list.findData(self.language))
         self.language_list.currentIndexChanged.connect(self.language_changed)
-        row.addWidget(self.language_list, 1)
+        self.title_bar = TitleBar(self, self.language_list)
+        self.setMenuWidget(self.title_bar)
+        row = QHBoxLayout()
+        row.addWidget(self.network_button, 1)
         row.addSpacing(12)
         row.addWidget(self.label('difficulty'))
         self.difficulty_list = QComboBox()
@@ -277,6 +287,8 @@ class MainWindow(QMainWindow):
 
     def retranslate(self):
         self.setWindowTitle('StarSavior · ' + self.t('settings'))
+        self.language_list.setToolTip(self.t('language'))
+        self.language_list.setAccessibleName(self.t('language'))
         for widget, key in self.translatable:
             widget.setText(self.t(key))
         for index in range(self.difficulty_list.count()):
@@ -324,12 +336,51 @@ class MainWindow(QMainWindow):
         self.summary.setText(self.t('summary', count=len(self.store.load()), updated=displayed))
         self.summary.setToolTip(self.t('data_updated_hint'))
 
+    def configure_network(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle(self.t('network_settings'))
+        dialog.setMinimumWidth(540)
+        layout = QVBoxLayout(dialog)
+        hint = QLabel(self.t('proxy_hint'))
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
+        address = QLineEdit(str(self.settings.value('sync_proxy', '')))
+        address.setPlaceholderText('http://127.0.0.1:7890')
+        layout.addWidget(address)
+        insecure = QCheckBox(self.t('skip_tls'))
+        insecure.setChecked(self.settings.value('sync_skip_tls', False, type=bool))
+        layout.addWidget(insecure)
+        warning = QLabel(self.t('tls_warning'))
+        warning.setWordWrap(True)
+        warning.setStyleSheet('color: #a65e12;')
+        layout.addWidget(warning)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
+        buttons.button(QDialogButtonBox.StandardButton.Save).setText(self.t('network_save'))
+        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(self.t('network_cancel'))
+        buttons.rejected.connect(dialog.reject)
+
+        def save():
+            try:
+                proxy = validate_proxy(address.text())
+            except ValueError:
+                QMessageBox.warning(dialog, self.t('network_settings'), self.t('proxy_invalid'))
+                return
+            self.settings.setValue('sync_proxy', proxy)
+            self.settings.setValue('sync_skip_tls', insecure.isChecked())
+            self.settings.sync()
+            dialog.accept()
+
+        buttons.accepted.connect(save)
+        layout.addWidget(buttons)
+        dialog.exec()
+
     def sync(self):
         if self.busy or (self.sync_worker and self.sync_worker.isRunning()):
             return
         self.sync_button.setEnabled(False)
-        self.status.setText(self.t('syncing'))
-        self.sync_worker = SyncWorker(self)
+        skip_tls = self.settings.value('sync_skip_tls', False, type=bool)
+        self.status.setText(self.t('syncing') + (' ' + self.t('tls_disabled') if skip_tls else ''))
+        self.sync_worker = SyncWorker(self, str(self.settings.value('sync_proxy', '')), not skip_tls)
         self.sync_worker.result.connect(self.synced)
         self.sync_worker.failed.connect(self.sync_failed)
         self.sync_worker.finished.connect(lambda: self.sync_button.setEnabled(True))
@@ -564,6 +615,24 @@ class MainWindow(QMainWindow):
         self.effects.setHtml(content)
         details = f'{self.t("data_details")}\n{event.phase}\n{event.source}'
         self.effects.setToolTip(details)
+
+    def nativeEvent(self, event_type, message):
+        if os.name == 'nt' and not self.isMaximized() and not self.isFullScreen():
+            msg = wintypes.MSG.from_address(int(message))
+            if msg.message == 0x0084:
+                rect = wintypes.RECT()
+                if windows.user32.GetWindowRect(wintypes.HWND(int(self.winId())), ctypes.byref(rect)):
+                    x = ctypes.c_short(msg.lParam & 0xffff).value
+                    y = ctypes.c_short((msg.lParam >> 16) & 0xffff).value
+                    border = round(6 * self.devicePixelRatioF())
+                    left, right = x < rect.left + border, x >= rect.right - border
+                    top, bottom = y < rect.top + border, y >= rect.bottom - border
+                    hit = (13 if left else 14 if right else 12) if top else (
+                        (16 if left else 17 if right else 15) if bottom else
+                        (10 if left else 11 if right else None))
+                    if hit is not None:
+                        return True, hit
+        return super().nativeEvent(event_type, message)
 
     def closeEvent(self, event):
         if self.busy or (self.worker and self.worker.isRunning()) or (self.sync_worker and self.sync_worker.isRunning()):
