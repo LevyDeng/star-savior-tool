@@ -402,7 +402,7 @@ class MainWindow(QMainWindow):
         previous = self.window_list.currentData()
         self.window_list.blockSignals(True)
         self.window_list.clear()
-        self.window_list.addItem(self.t('select'), None)
+        self.window_list.addItem(self.t('current_screen'), None)
         for hwnd, title in windows.list_windows():
             if hwnd not in (int(self.winId()),
                             int(self.floating_button.winId()), int(self.floating_results.winId())):
@@ -412,16 +412,14 @@ class MainWindow(QMainWindow):
             saved_title = self.settings.value('game_window_title', '')
             index = self.window_list.findText(saved_title) if saved_title else -1
             if index <= 0:
-                games = [i for i in range(1, self.window_list.count())
-                         if 'starsavior' in self.window_list.itemText(i).replace(' ', '').casefold()]
-                index = games[0] if len(games) == 1 else 0
+                index = 0
         self.window_list.setCurrentIndex(max(0, index))
         self.window_list.blockSignals(False)
         if self.window_list.currentData() != previous:
             self.window_changed()
 
     def window_changed(self, *_):
-        title = self.window_list.currentText()
+        title = self.window_list.currentText() if self.window_list.currentData() else '__screen__'
         raw = self.settings.value('event_regions/' + title, '')
         try:
             regions = json.loads(raw) if raw else None
@@ -430,11 +428,10 @@ class MainWindow(QMainWindow):
             self.regions = dict(DEFAULT_REGIONS)
         if self.window_list.currentData():
             self.settings.setValue('game_window_title', title)
+        else:
+            self.settings.setValue('game_window_title', '')
 
     def enable_floating(self):
-        if not self.window_list.currentData():
-            self.status.setText(self.t('choose_first'))
-            return
         self.floating_mode = True
         self.hide()
         self.floating_button.show()
@@ -481,9 +478,7 @@ class MainWindow(QMainWindow):
             return
         self.clear_results()
         hwnd = self.window_list.currentData()
-        if not hwnd:
-            self.status.setText(self.t('choose_first'))
-            return
+        screen = (self.floating_button.screen() if self.floating_mode else self.screen())
         self.capture_allowed_at = time.monotonic() + .8
         self.busy = True
         self.floating_button.set_busy(True)
@@ -491,18 +486,28 @@ class MainWindow(QMainWindow):
         self.floating_button.hide()
         self.floating_results.hide()
         try:
-            windows.activate(hwnd)
+            if hwnd:
+                windows.activate(hwnd)
         except Exception as exc:
             self.busy = False
             self.floating_button.set_busy(False)
             self.restore_capture_ui()
             self.show_scan_status(str(exc))
             return
-        QTimer.singleShot(300, lambda: self.finish_capture(hwnd, selecting))
+        QTimer.singleShot(300, lambda: self.finish_capture(hwnd, selecting, screen))
 
-    def finish_capture(self, hwnd, selecting):
+    def finish_capture(self, hwnd, selecting, screen=None):
         try:
-            image = windows.capture(hwnd)
+            if hwnd:
+                image = windows.capture(hwnd)
+            else:
+                from PIL import Image
+                screen = screen or self.screen()
+                frame = screen.grabWindow(0).toImage().convertToFormat(QImage.Format.Format_RGB888)
+                if frame.isNull():
+                    raise RuntimeError('Screen capture returned an empty image')
+                image = Image.frombytes('RGB', (frame.width(), frame.height()),
+                                        bytes(frame.constBits()), 'raw', 'RGB', frame.bytesPerLine())
             self.restore_capture_ui()
             if selecting:
                 regions = {}
@@ -513,7 +518,8 @@ class MainWindow(QMainWindow):
                     regions[name] = dialog.region
                 if valid_regions(regions):
                     self.regions = regions
-                    self.settings.setValue('event_regions/' + self.window_list.currentText(), json.dumps(regions))
+                    profile = self.window_list.currentText() if hwnd else '__screen__'
+                    self.settings.setValue('event_regions/' + profile, json.dumps(regions))
                     self.status.setText(self.t('regions_saved'))
                 self.busy = False
                 self.floating_button.set_busy(False)
