@@ -35,6 +35,11 @@ QComboBox QAbstractItemView { background: white; selection-background-color: #de
 QLineEdit { color: #223b56; background: #ffffff; border: 1px solid #cbdfee; border-radius: 8px; padding: 8px 12px; selection-background-color: #cfe5fa; selection-color: #173b60; }
 QLineEdit:focus { border-color: #357db9; background: #ffffff; }
 QLineEdit:disabled { color: #71869a; background: #e8eff5; }
+QSlider:horizontal { min-height: 26px; min-width: 90px; }
+QSlider::groove:horizontal { height: 6px; background: #d9e7f3; border-radius: 3px; }
+QSlider::sub-page:horizontal { background: #357db9; border-radius: 3px; }
+QSlider::handle:horizontal { background: white; border: 2px solid #357db9; width: 16px; margin: -7px 0; border-radius: 10px; }
+QSlider::handle:horizontal:hover, QSlider::handle:horizontal:focus { background: #dceeff; border-color: #205987; }
 QTextBrowser, QListWidget { background: #ffffff; border: 1px solid #d5e5f1; border-radius: 10px; padding: 8px; selection-background-color: #d6eafe; selection-color: #173b60; }
 QToolButton { background: #eaf3fb; border: 1px solid #d5e5f1; border-radius: 7px; padding: 8px; text-align: left; }
 QToolButton:hover { background: #dfedfa; }

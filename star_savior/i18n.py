@@ -1,6 +1,9 @@
 """Shared interface and structured-effect vocabulary."""
 LANGUAGES = {'zh-CN': '简体中文', 'zh-TW': '繁體中文', 'en-US': 'English', 'ja-JP': '日本語', 'ko-KR': '한국어'}
 _rows = {
+ 'floating_preview': ('实际大小预览', '實際大小預覽', 'Actual-size preview', '実寸プレビュー', '실제 크기 미리보기'),
+ 'floating_size': ('悬浮按钮大小', '懸浮按鈕大小', 'Floating button size', 'フローティングボタンのサイズ', '플로팅 버튼 크기'),
+ 'floating_transparency': ('透明度（0% 不透明）', '透明度（0% 不透明）', 'Transparency (0% opaque)', '透明度（0% 不透明）', '투명도 (0% 불투명)'),
  'current_screen': ('当前屏幕（无需选择游戏窗口）', '目前螢幕（無需選擇遊戲視窗）', 'Current screen (no game window required)', '現在の画面（ゲームウィンドウ不要）', '현재 화면 (게임 창 선택 불필요)'),
  'network_settings': ('代理设置', '代理設定', 'Proxy settings', 'プロキシ設定', '프록시 설정'),
  'proxy_hint': ('代理地址（仅攻略同步）：支持 HTTP/HTTPS 代理。留空使用系统默认网络设置。请填写代理软件的 HTTP 或混合端口，不支持 SOCKS 或带账号密码的地址。', '代理位址（僅攻略同步）：支援 HTTP/HTTPS。留空使用系統預設網路設定。請使用 HTTP 或混合連接埠，不支援 SOCKS 或帳號密碼。', 'Proxy for guide sync only: HTTP/HTTPS supported. Leave blank to use default system networking. Use the HTTP or mixed port, not SOCKS or a URL with credentials.', '攻略同期用の HTTP/HTTPS プロキシ。空欄はシステム既定設定。HTTP または混合ポートを使用してください。SOCKS と認証情報付き URL は非対応です。', '공략 동기화용 HTTP/HTTPS 프록시. 비워 두면 시스템 기본 설정을 사용합니다. HTTP 또는 혼합 포트를 사용하세요. SOCKS 및 인증 정보가 있는 URL은 지원하지 않습니다.'),

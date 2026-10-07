@@ -10,11 +10,11 @@ from ctypes import wintypes
 from pathlib import Path
 from datetime import datetime
 from PySide6.QtCore import QAbstractNativeEventFilter, QSettings, QStandardPaths, QThread, QTimer, QUrl, Qt, Signal, QRect, QPoint
-from PySide6.QtGui import QDesktopServices, QFont, QImage, QPainter, QPixmap
-from PySide6.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QMainWindow, QMessageBox, QPushButton, QRubberBand, QTextBrowser, QVBoxLayout, QWidget
+from PySide6.QtGui import QDesktopServices, QFont, QIcon, QImage, QPainter, QPixmap
+from PySide6.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QMainWindow, QMessageBox, QPushButton, QRubberBand, QSlider, QTextBrowser, QVBoxLayout, QWidget
 from .core import match_regions
 from .layout import DEFAULT_REGIONS, valid_regions
-from .floating import FloatingButton, FloatingResults
+from .floating import FloatingButton, FloatingButtonPreview, FloatingResults
 from .website import DIFFICULTIES, SOURCE_URL, WebsiteStore, download, localized
 from .i18n import LANGUAGES, tr
 from .presentation import THEME
@@ -142,6 +142,7 @@ class MainWindow(QMainWindow):
     def __init__(self, data_dir):
         super().__init__()
         self.setWindowTitle('starsaviorhelper')
+        self.setWindowIcon(QIcon(str(Path(__file__).with_name('assets') / 'app-icon.png')))
         self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
         self.resize(820, 410)
         self.setStyleSheet(THEME)
@@ -227,6 +228,44 @@ class MainWindow(QMainWindow):
 
         row.addWidget(self.select_region)
         layout.addLayout(row)
+        appearance_row = QHBoxLayout()
+        appearance_controls = QVBoxLayout()
+        appearance_controls.addStretch(1)
+        row = QHBoxLayout()
+        row.addWidget(self.label('floating_size'))
+        self.button_size = QSlider(Qt.Orientation.Horizontal)
+        self.button_size.setRange(40, 160)
+        self.button_size.setValue(self.settings.value('floating_size', 72, type=int))
+        row.addWidget(self.button_size, 1)
+        self.button_size_value = QLabel()
+        self.button_size_value.setMinimumWidth(48)
+        row.addWidget(self.button_size_value)
+        appearance_controls.addLayout(row)
+        appearance_controls.addSpacing(12)
+        row = QHBoxLayout()
+        row.addWidget(self.label('floating_transparency'))
+        self.button_transparency = QSlider(Qt.Orientation.Horizontal)
+        self.button_transparency.setRange(0, 90)
+        self.button_transparency.setValue(self.settings.value('floating_transparency', 50, type=int))
+        row.addWidget(self.button_transparency, 1)
+        self.button_transparency_value = QLabel()
+        self.button_transparency_value.setMinimumWidth(40)
+        row.addWidget(self.button_transparency_value)
+        appearance_controls.addLayout(row)
+        appearance_controls.addStretch(1)
+        appearance_row.addLayout(appearance_controls, 1)
+        appearance_row.addSpacing(16)
+        preview_column = QVBoxLayout()
+        preview_label = self.label('floating_preview')
+        preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        preview_column.addWidget(preview_label)
+        self.button_preview = FloatingButtonPreview(self.floating_button.icon_pixmap)
+        preview_column.addWidget(self.button_preview)
+        appearance_row.addLayout(preview_column)
+        self.button_size.valueChanged.connect(self.update_button_appearance)
+        self.button_transparency.valueChanged.connect(self.update_button_appearance)
+        self.update_button_appearance()
+        layout.addLayout(appearance_row)
         self.status = QLabel()
         self.status.setObjectName('status')
         self.status.setWordWrap(True)
@@ -263,6 +302,16 @@ class MainWindow(QMainWindow):
 
     def t(self, key, **values):
         return tr(key, self.language, **values)
+
+    def update_button_appearance(self, *_):
+        size = self.button_size.value()
+        transparency = self.button_transparency.value()
+        self.button_size_value.setText(f'{size} px')
+        self.button_transparency_value.setText(f'{transparency}%')
+        self.settings.setValue('floating_size', size)
+        self.settings.setValue('floating_transparency', transparency)
+        self.floating_button.set_appearance(size, transparency)
+        self.button_preview.set_appearance(size, transparency)
 
     def fit_results(self):
         area = self.screen().availableGeometry()
@@ -657,6 +706,7 @@ class MainWindow(QMainWindow):
 def main():
     windows.enable_dpi_awareness()
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon(str(Path(__file__).with_name('assets') / 'app-icon.png')))
     app.setFont(QFont('Segoe UI', 10))
     app.setApplicationName('StarSaviorGuideDemo')
     app.setApplicationDisplayName('starsaviorhelper')

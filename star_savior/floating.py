@@ -1,6 +1,7 @@
 """Small draggable scan button and independent non-modal results panel."""
+from pathlib import Path
 from PySide6.QtCore import QPoint, QPointF, QRectF, Qt, Signal, QTimer
-from PySide6.QtGui import QColor, QConicalGradient, QLinearGradient, QRadialGradient, QGuiApplication, QPainter, QPainterPath, QPen
+from PySide6.QtGui import QColor, QConicalGradient, QGuiApplication, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QApplication, QDialog, QLabel, QListWidget, QMenu, QTextBrowser, QVBoxLayout, QWidget
 from .i18n import tr
 from .presentation import ResultPanel, THEME
@@ -21,6 +22,34 @@ class NonActivatingWindow:
         super().showEvent(event)
 
 
+class FloatingButtonPreview(QWidget):
+    """Actual-size artwork preview with the same opacity as the overlay."""
+
+    def __init__(self, pixmap, parent=None):
+        super().__init__(parent)
+        self.pixmap = pixmap
+        self.icon_size = 72
+        self.transparency = 50
+        self.setFixedSize(176, 176)
+
+    def set_appearance(self, size, transparency):
+        self.icon_size = size
+        self.transparency = transparency
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        for y in range(0, self.height(), 16):
+            for x in range(0, self.width(), 16):
+                color = '#edf3f9' if (x // 16 + y // 16) % 2 == 0 else '#dce6f0'
+                painter.fillRect(x, y, 16, 16, QColor(color))
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+        painter.setOpacity(1 - self.transparency / 100)
+        margin = (self.width() - self.icon_size) // 2
+        painter.drawPixmap(QRectF(margin, margin, self.icon_size, self.icon_size),
+                           self.pixmap, QRectF(self.pixmap.rect()))
+
+
 class FloatingButton(NonActivatingWindow, QWidget):
     scan = Signal()
     controls = Signal()
@@ -35,6 +64,8 @@ class FloatingButton(NonActivatingWindow, QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.setAttribute(Qt.WidgetAttribute.WA_QuitOnClose, False)
         self.setFixedSize(72, 72)
+        self.setWindowOpacity(0.5)
+        self.icon_pixmap = QPixmap(str(Path(__file__).with_name('assets') / 'app-icon.png'))
         self.setToolTip(tr('capture', 'zh-CN'))
         self.busy = False
         self.language = 'zh-CN'
@@ -73,47 +104,29 @@ class FloatingButton(NonActivatingWindow, QWidget):
         self.setToolTip(tr('capture', language))
         self.update()
 
+    def set_appearance(self, size, transparency):
+        size = max(40, min(160, int(size)))
+        transparency = max(0, min(90, int(transparency)))
+        self.setFixedSize(size, size)
+        self.setWindowOpacity(1 - transparency / 100)
+        self.clamp_to_screen()
+        self.update()
+
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        shadow = QRadialGradient(QPointF(36, 42), 35)
-        shadow.setColorAt(0, QColor(12, 40, 74, 100))
-        shadow.setColorAt(.7, QColor(12, 40, 74, 35))
-        shadow.setColorAt(1, QColor(12, 40, 74, 0))
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(shadow)
-        painter.drawEllipse(QRectF(1, 9, 70, 62))
-        body = QRectF(7, 4, 58, 58)
-        glass = QLinearGradient(14, 4, 51, 62)
-        for stop, color in ((0, '#c1e8ff'), (.32, '#65afe6'), (.68, '#337fba'), (1, '#174879')):
-            glass.setColorAt(stop, QColor(color))
-        painter.setBrush(glass)
-        painter.setPen(QPen(QColor(226, 247, 255, 220), 1.5))
-        painter.drawEllipse(body)
-        highlight = QLinearGradient(0, 7, 0, 35)
-        highlight.setColorAt(0, QColor(255, 255, 255, 150))
-        highlight.setColorAt(1, QColor(255, 255, 255, 0))
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(highlight)
-        painter.drawEllipse(QRectF(14, 8, 44, 24))
-        star = QPainterPath(QPointF(36, 17))
-        for x, y in ((40, 29), (52, 33), (40, 37), (36, 49), (32, 37), (20, 33), (32, 29)):
-            star.lineTo(x, y)
-        star.closeSubpath()
-        painter.save()
-        painter.translate(0, 1.5)
-        painter.fillPath(star, QColor(13, 57, 93, 90))
-        painter.restore()
-        painter.fillPath(star, QColor('#f3fbff'))
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+        painter.drawPixmap(self.rect(), self.icon_pixmap)
         if self.busy:
-            sheen = QConicalGradient(QPointF(36, 33), -self.angle)
-            for stop, color in ((0, QColor(123, 207, 255, 0)), (.3, QColor('#82d8ff')),
-                                (.48, QColor('#effcff')), (.55, QColor('#a2e6ff')),
-                                (.75, QColor(123, 207, 255, 0)), (1, QColor(123, 207, 255, 0))):
-                sheen.setColorAt(stop, color)
+            painter.scale(self.width() / 72, self.height() / 72)
             painter.setBrush(Qt.BrushStyle.NoBrush)
+            sheen = QConicalGradient(QPointF(36, 36), -self.angle)
+            for stop, color in ((0, QColor(114, 211, 155, 0)), (.3, QColor('#73d5a0')),
+                                (.48, QColor('#d9ffe9')), (.55, QColor('#a3edc0')),
+                                (.75, QColor(114, 211, 155, 0)), (1, QColor(114, 211, 155, 0))):
+                sheen.setColorAt(stop, color)
             painter.setPen(QPen(sheen, 3))
-            painter.drawEllipse(QRectF(3, 0, 66, 66))
+            painter.drawEllipse(QRectF(5, 5, 62, 62))
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:

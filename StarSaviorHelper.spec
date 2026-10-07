@@ -5,7 +5,7 @@ a = Analysis(
     ['launcher.py'],
     pathex=[],
     binaries=[],
-    datas=collect_data_files('rapidocr'),
+    datas=collect_data_files('rapidocr') + [('star_savior/assets/app-icon.png', 'star_savior/assets')],
     hiddenimports=collect_submodules('rapidocr'),
     hookspath=[],
     hooksconfig={},
@@ -22,5 +22,6 @@ exe = EXE(
     pyz, a.scripts, [], exclude_binaries=True,
     name='starsaviorhelper', debug=False, bootloader_ignore_signals=False,
     strip=False, upx=False, console=False,
+    icon='star_savior/assets/app-icon.ico',
 )
 coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name='starsaviorhelper')

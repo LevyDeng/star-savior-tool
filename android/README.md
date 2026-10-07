@@ -52,3 +52,5 @@ The Gradle build and JVM tests do not establish real-game screen-capture or OCR 
 Build verification includes JVM parity tests and a connection-scoped TLS test, APK compilation, and Android lint. User testing confirmed text recognition in the earlier demo. The updated full-display flow, long-press menu and animated overlay still require phone verification. Desktop tests cover rendering, timer visibility lifecycle, drag behavior, difficulty persistence and startup.
 
 Implementation references: [Android MediaProjection](https://developer.android.com/media/grow/media-projection), [ML Kit text recognition](https://developers.google.com/ml-kit/vision/text-recognition/v2/android).
+
+The approved white glass icon has one pale-blue outer border and a faceted blue-white four-point star. Windows floating controls and the application use `star_savior/assets/app-icon.png`; the EXE build embeds the multi-size ICO. Android uses the same artwork for its floating button and density-specific/adaptive launcher icons. Launcher masking remains controlled by the Android launcher. The high-resolution transparent master is retained alongside the Windows assets.
