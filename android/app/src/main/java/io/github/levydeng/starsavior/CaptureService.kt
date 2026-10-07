@@ -49,6 +49,13 @@ class CaptureService : Service() {
     private var waitingForFrame = false
     private var closing = false
     private var lastScan = 0L
+    private val readPendingFrame = object : Runnable {
+        override fun run() {
+            if (!waitingForFrame || closing) return
+            reader?.let(::readFrame)
+            if (waitingForFrame && !closing) main.postDelayed(this, 50)
+        }
+    }
     private val appearanceListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         if (key == "floating_size" || key == "floating_transparency") {
             main.post {
@@ -60,6 +67,7 @@ class CaptureService : Service() {
         if (waitingForFrame && !closing) {
             Log.w("CaptureService", "Fresh frame timed out after 5 seconds")
             waitingForFrame = false; busy = false
+            main.removeCallbacks(readPendingFrame)
             Toast.makeText(this, Ui.text(this, "capture_timeout"), Toast.LENGTH_LONG).show()
             showButton()
             showFailure("Waiting for screenshot", IllegalStateException(Ui.text(this, "capture_timeout")))
@@ -134,13 +142,26 @@ class CaptureService : Service() {
     private fun newReader(width: Int, height: Int): ImageReader {
         return ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2).also { next ->
             reader = next
-            next.setOnImageAvailableListener({ source ->
-                val image = runCatching { source.acquireLatestImage() }.getOrNull() ?: return@setOnImageAvailableListener
+            next.setOnImageAvailableListener({ source -> readFrame(source) }, main)
+        }
+    }
+
+    private fun readFrame(source: ImageReader) {
+                if (closing || source !== reader) return
+                // Keep early post-hide frames queued. Static screens may send only one frame.
+                if (waitingForFrame && System.nanoTime() < captureAfter) return
+                val image = try {
+                    source.acquireLatestImage()
+                } catch (error: Exception) {
+                    if (waitingForFrame) failCapture("Acquiring screenshot buffer", error)
+                    null
+                } ?: return
                 try {
-                    if (!waitingForFrame || System.nanoTime() < captureAfter || closing) return@setOnImageAvailableListener
+                    if (!waitingForFrame) return
                     waitingForFrame = false
                     Log.i("CaptureService", "Fresh frame received: ${image.width}x${image.height}")
                     main.removeCallbacks(timeout)
+                    main.removeCallbacks(readPendingFrame)
                     val plane = image.planes[0]
                     val paddedWidth = image.width + (plane.rowStride - plane.pixelStride * image.width) / plane.pixelStride
                     val padded = Bitmap.createBitmap(paddedWidth, image.height, Bitmap.Config.ARGB_8888)
@@ -169,8 +190,6 @@ class CaptureService : Service() {
                     showButton()
                     showFailure("Reading captured frame", error)
                 } finally { image.close() }
-            }, main)
-        }
     }
 
     private fun resizeCapture(width: Int, height: Int) {
@@ -277,18 +296,20 @@ class CaptureService : Service() {
         Log.i("CaptureService", "Waiting for a fresh capture: ${width}x$height")
         try {
             check(reader != null && display != null && projection != null) { "Screen capture session is unavailable" }
-            scanButton?.takeIf { it.isAttachedToWindow }?.let { windows.removeViewImmediate(it) }
+            // Drain old buffers before hiding the button so the hide-triggered frame survives.
             reader?.acquireLatestImage()?.close()
             captureAfter = System.nanoTime() + 180_000_000L
+            scanButton?.takeIf { it.isAttachedToWindow }?.let { windows.removeViewImmediate(it) }
             main.postDelayed(timeout, 5000)
-            // Reattach the same surface to request a fresh frame even for static game screens.
+            main.postDelayed(readPendingFrame, 180)
+            // Only request a surface refresh if no frame has arrived after normal settling.
             main.postDelayed({ if (waitingForFrame && !closing) {
                 try {
                     display?.surface = null; display?.surface = reader?.surface
                 } catch (error: Exception) {
                     failCapture("Requesting a fresh screenshot", error)
                 }
-            } }, 220)
+            } }, 1000)
         } catch (error: Exception) {
             failCapture("Starting screenshot capture", error)
         }
@@ -297,6 +318,7 @@ class CaptureService : Service() {
     private fun failCapture(stage: String, error: Throwable) {
         waitingForFrame = false; busy = false
         main.removeCallbacks(timeout)
+        main.removeCallbacks(readPendingFrame)
         showButton()
         showFailure(stage, error)
     }

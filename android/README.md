@@ -33,7 +33,7 @@ keytool -genkeypair -keystore .signing/android-debug.keystore -storepass android
 4. Open the game in fullscreen landscape and tap the glass star. Drag it to move; long-press for Open settings, Exit or Cancel. Long-press does not stop capture directly.
 5. A light-blue animated rim appears while recognition runs. The button is briefly removed while acquiring a fresh image and then returns during OCR.
 
-Screenshot import, region calibration and reset controls are removed. Recognition always uses the shared normalized fullscreen title and choice regions. Portrait scans report a clear instruction to switch to fullscreen landscape. There is no Android model-release control.
+Screenshot import, region calibration and reset controls are removed. Recognition adapts the shared normalized title and choice regions to the fullscreen aspect ratio: wide phone screens get a lower title boundary and a higher choice boundary. Portrait scans report a clear instruction to switch to fullscreen landscape. There is no Android model-release control.
 
 Capture consent is required again after stopping, process death, or the system ending the session. A single virtual display is created per consent token. Android 14 content-size callbacks resize the existing display and image surface; older versions respond to configuration changes. The foreground service is not sticky and does not reuse stored consent. Screen sharing requires Android's visible ongoing foreground-service notification; notification permission is requested on Android 13+.
 

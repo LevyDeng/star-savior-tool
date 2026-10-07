@@ -24,6 +24,24 @@ object Regions {
                   points.getDouble(2).toFloat(), points.getDouble(3).toFloat())
         }
     }
+
+    fun forFrame(context: Context, width: Int, height: Int): Map<String, RectF> {
+        require(width > 0 && height > 0)
+        val regions = load(context).mapValues { RectF(it.value) }.toMutableMap()
+        val aspect = width.toFloat() / height
+        // The shared defaults came from a 16:10 desktop image. Wide phones place
+        // the title lower and the top choices higher in normalized screen coordinates.
+        regions.getValue("title").apply {
+            top = minOf(top, 0.14f)
+            right = maxOf(right, 0.40f)
+            bottom = maxOf(bottom, 0.23f * maxOf(1f, aspect / 1.6f) + 0.025f).coerceAtMost(0.40f)
+        }
+        if (aspect > 1.9f) regions.getValue("options").apply {
+            top = minOf(top, 0.34f)
+            bottom = 0.80f
+        }
+        return regions
+    }
 }
 
 class OcrEngine(private val context: Context) {
@@ -53,7 +71,7 @@ class OcrEngine(private val context: Context) {
             } finally { if (crop !== bitmap) crop.recycle() }
         }
         try {
-            val regions = Regions.load(context)
+            val regions = Regions.forFrame(context, bitmap.width, bitmap.height)
             val title = read(regions.getValue("title")); val choices = read(regions.getValue("options"))
             return Recognition(title, choices, GuideMatcher.match(events, title, choices), (System.nanoTime() - started) / 1e9)
         } finally { recognizer.close() }
