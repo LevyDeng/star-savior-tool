@@ -41,6 +41,9 @@ object Ui {
     }
     fun preferences(context: Context) = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     private val extras = mapOf(
+        "recognition_failed" to listOf("识别失败", "辨識失敗", "Recognition failed", "認識に失敗しました", "인식 실패"),
+        "copy_diagnostics" to listOf("复制诊断信息", "複製診斷資訊", "Copy diagnostics", "診断情報をコピー", "진단 정보 복사"),
+        "diagnostics_copied" to listOf("诊断信息已复制", "診斷資訊已複製", "Diagnostics copied", "診断情報をコピーしました", "진단 정보를 복사했습니다"),
         "floating_size" to listOf("悬浮按钮大小", "懸浮按鈕大小", "Floating button size", "フローティングボタンのサイズ", "플로팅 버튼 크기"),
         "floating_transparency" to listOf("透明度（0% 不透明）", "透明度（0% 不透明）", "Transparency (0% opaque)", "透明度（0% 不透明）", "투명도 (0% 불투명)"),
         "floating_preview" to listOf("实际大小预览", "實際大小預覽", "Actual-size preview", "実寸プレビュー", "실제 크기 미리보기"),

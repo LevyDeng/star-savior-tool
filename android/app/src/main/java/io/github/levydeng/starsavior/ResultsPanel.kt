@@ -1,11 +1,29 @@
 package io.github.levydeng.starsavior
 
 import android.content.Context
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.Toast
 
 object ResultsPanel {
+    fun error(context: Context, diagnostics: String, close: () -> Unit): View {
+        val scroll = ScrollView(context)
+        val body = Ui.column(context)
+        scroll.addView(body)
+        body.addView(Ui.label(context, Ui.text(context, "recognition_failed"), 21f))
+        body.addView(Ui.label(context, diagnostics, 14f).apply { setTextIsSelectable(true) })
+        body.addView(Ui.button(context, Ui.text(context, "copy_diagnostics")) {
+            context.getSystemService(ClipboardManager::class.java)
+                .setPrimaryClip(ClipData.newPlainText("StarSavior diagnostics", diagnostics))
+            Toast.makeText(context, Ui.text(context, "diagnostics_copied"), Toast.LENGTH_SHORT).show()
+        })
+        body.addView(Ui.button(context, Ui.text(context, "network_cancel"), action = close))
+        return scroll
+    }
+
     fun create(context: Context, recognition: Recognition, close: () -> Unit): View {
         val scroll = ScrollView(context)
         val body = Ui.column(context)
