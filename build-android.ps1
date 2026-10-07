@@ -30,6 +30,19 @@ try {
 }
 try {
     $env:JAVA_HOME = $JavaPath
+    # Keep the app identity outside disposable build caches. Never replace an existing key.
+    $taskSigningRoot = Join-Path $taskRoot '.signing'
+    $taskSigningKey = Join-Path $taskSigningRoot 'android-debug.keystore'
+    if (-not (Test-Path -LiteralPath $taskSigningKey)) {
+        New-Item -ItemType Directory -Path $taskSigningRoot -Force | Out-Null
+        $taskLegacyKey = Join-Path $taskBuildRoot 'android-home/debug.keystore'
+        if (Test-Path -LiteralPath $taskLegacyKey) {
+            Copy-Item -LiteralPath $taskLegacyKey -Destination $taskSigningKey
+            Write-Output 'Preserved the existing project signing key in .signing/android-debug.keystore.'
+        } else {
+            throw 'No project signing key found. Restore .signing/android-debug.keystore from your private backup. For a NEW app identity only, create a debug-format key as documented in android/README.md.'
+        }
+    }
     $env:GRADLE_USER_HOME = Join-Path $taskRoot 'build/gradle-home'
     $env:ANDROID_USER_HOME = Join-Path $taskRoot 'build/android-home'
     $taskSdkProperty = 'sdk.dir=' + $SdkPath.Replace('\', '/')

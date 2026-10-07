@@ -10,7 +10,20 @@ Install JDK 17 or newer, Android SDK Platform 34 and Build Tools 34.0.0. Open th
 ./build-android.ps1 -SdkPath C:/Users/example/AppData/Local/Android/Sdk -JavaPath 'C:/Program Files/Java/jdk-21'
 ```
 
-The checked-in Gradle wrapper uses Gradle 8.11.1. The first build downloads Gradle and Maven dependencies. The script runs JVM parity checks, then copies the debug-signed APK and SHA256 checksum to `dist/<timestamp>/`. This is a development build; a distribution release needs a maintained signing key and current store requirements.
+The checked-in Gradle wrapper uses Gradle 8.11.1. The first build downloads Gradle and Maven dependencies. The script runs JVM parity checks, then copies the debug-signed APK and SHA256 checksum to `dist/<timestamp>/`. This is a sideloaded development build.
+
+### Stable signing and upgrades
+
+All builds, including Android Studio, explicitly use `.signing/android-debug.keystore` at the repository root. The build script preserves the existing `build/android-home/debug.keystore` there on the first migration. The key is outside disposable caches and excluded from Git. Back it up privately and restore it on every build machine. The public debug password is not protection for the private key; do not share or upload this directory. This setup preserves the current development identity; it is not a production release-signing configuration.
+
+Android requires the same application ID and signing certificate for an in-place update, even for sideloaded apps. A different certificate cannot update the installed app. Recover the original private key to retain compatibility; the APK alone cannot recover that key. Without it, uninstalling and reinstalling starts a new identity and removes the app's private data. Do not replace the persistent key when cleaning `build/` or `dist/`.
+
+If neither persistent nor legacy project key exists, the build fails instead of silently creating an incompatible identity. Only for a new installation identity, explicitly create a key from the repository root (use your JDK's `keytool`):
+
+```powershell
+New-Item -ItemType Directory -Path .signing -Force
+keytool -genkeypair -keystore .signing/android-debug.keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=Star Savior Helper Development'
+```
 
 ## First run
 

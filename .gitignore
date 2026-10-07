@@ -9,6 +9,7 @@ __pycache__/
 .runtime/
 /build/
 /dist/
+/.signing/
 
 # Android local state and generated artifacts
 **/.gradle/

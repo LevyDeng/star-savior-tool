@@ -3,6 +3,18 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 android {
+    val persistentSigningKey = rootProject.file("../.signing/android-debug.keystore")
+    check(persistentSigningKey.isFile) {
+        "Restore .signing/android-debug.keystore or run build-android.ps1 to preserve the existing project key. See android/README.md."
+    }
+    signingConfigs {
+        getByName("debug") {
+            storeFile = persistentSigningKey
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
     namespace = "io.github.levydeng.starsavior"
     compileSdk = 34
     buildToolsVersion = "34.0.0"
