@@ -29,9 +29,9 @@ try {
             $env:PYTHONUSERBASE = $previousPythonUserBase
         }
     }
-    Compress-Archive -Path (Join-Path $stagingDirectory 'StarSaviorHelper') -DestinationPath $stagingArchive -Force
+    Compress-Archive -Path (Join-Path $stagingDirectory 'starsaviorhelper') -DestinationPath $stagingArchive -Force
     New-Item -ItemType Directory -Path $releaseDirectory | Out-Null
-    Move-Item -LiteralPath $stagingArchive -Destination (Join-Path $releaseDirectory 'StarSaviorHelper-Windows.zip')
+    Move-Item -LiteralPath $stagingArchive -Destination (Join-Path $releaseDirectory 'starsaviorhelper-Windows.zip')
     "Created $releaseDirectory"
 }
 finally {

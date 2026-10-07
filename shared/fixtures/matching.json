@@ -1,0 +1,292 @@
+[
+  {
+    "name": "exact",
+    "events": [
+      {
+        "title": "Training direction",
+        "phase": "1",
+        "source": "Fixture",
+        "options": [
+          {
+            "order": 1,
+            "text": "Attack training",
+            "effect": "Strength +10"
+          },
+          {
+            "order": 2,
+            "text": "Survival training",
+            "effect": "Vitality +10"
+          }
+        ],
+        "display_phase": null,
+        "display_source": null,
+        "card_id": null
+      }
+    ],
+    "title": [
+      "Training direction"
+    ],
+    "choices": [
+      "Attack training",
+      "Survival training"
+    ],
+    "state": "matched",
+    "candidates": [
+      {
+        "phase": "1",
+        "score": 1.0
+      }
+    ]
+  },
+  {
+    "name": "title_only",
+    "events": [
+      {
+        "title": "Training direction",
+        "phase": "1",
+        "source": "Fixture",
+        "options": [
+          {
+            "order": 1,
+            "text": "Attack training",
+            "effect": "Strength +10"
+          },
+          {
+            "order": 2,
+            "text": "Survival training",
+            "effect": "Vitality +10"
+          }
+        ],
+        "display_phase": null,
+        "display_source": null,
+        "card_id": null
+      }
+    ],
+    "title": [
+      "Training direction"
+    ],
+    "choices": [],
+    "state": "matched",
+    "candidates": [
+      {
+        "phase": "1",
+        "score": 1.0
+      }
+    ]
+  },
+  {
+    "name": "wrapped",
+    "events": [
+      {
+        "title": "Training direction",
+        "phase": "1",
+        "source": "Fixture",
+        "options": [
+          {
+            "order": 1,
+            "text": "Attack training",
+            "effect": "Strength +10"
+          },
+          {
+            "order": 2,
+            "text": "Survival training",
+            "effect": "Vitality +10"
+          }
+        ],
+        "display_phase": null,
+        "display_source": null,
+        "card_id": null
+      }
+    ],
+    "title": [
+      "Training",
+      "direction"
+    ],
+    "choices": [
+      "Attack",
+      "training",
+      "Survival training"
+    ],
+    "state": "matched",
+    "candidates": [
+      {
+        "phase": "1",
+        "score": 1.0
+      }
+    ]
+  },
+  {
+    "name": "typo",
+    "events": [
+      {
+        "title": "Training direction",
+        "phase": "1",
+        "source": "Fixture",
+        "options": [
+          {
+            "order": 1,
+            "text": "Attack training",
+            "effect": "Strength +10"
+          },
+          {
+            "order": 2,
+            "text": "Survival training",
+            "effect": "Vitality +10"
+          }
+        ],
+        "display_phase": null,
+        "display_source": null,
+        "card_id": null
+      }
+    ],
+    "title": [
+      "Training direktion"
+    ],
+    "choices": [
+      "Attack training",
+      "Survival training"
+    ],
+    "state": "matched",
+    "candidates": [
+      {
+        "phase": "1",
+        "score": 0.961764705882353
+      }
+    ]
+  },
+  {
+    "name": "unknown",
+    "events": [
+      {
+        "title": "Training direction",
+        "phase": "1",
+        "source": "Fixture",
+        "options": [
+          {
+            "order": 1,
+            "text": "Attack training",
+            "effect": "Strength +10"
+          },
+          {
+            "order": 2,
+            "text": "Survival training",
+            "effect": "Vitality +10"
+          }
+        ],
+        "display_phase": null,
+        "display_source": null,
+        "card_id": null
+      }
+    ],
+    "title": [
+      "Beach party"
+    ],
+    "choices": [
+      "Eat lunch"
+    ],
+    "state": "unknown",
+    "candidates": []
+  },
+  {
+    "name": "duplicate_cards",
+    "events": [
+      {
+        "title": "Training direction",
+        "phase": "1",
+        "source": "Fixture",
+        "options": [
+          {
+            "order": 1,
+            "text": "Attack training",
+            "effect": "Strength +10"
+          },
+          {
+            "order": 2,
+            "text": "Survival training",
+            "effect": "Vitality +10"
+          }
+        ],
+        "display_phase": null,
+        "display_source": null,
+        "card_id": null
+      },
+      {
+        "title": "Training direction",
+        "phase": "2",
+        "source": "Other card",
+        "options": [
+          {
+            "order": 1,
+            "text": "Attack training",
+            "effect": "Strength +10"
+          },
+          {
+            "order": 2,
+            "text": "Survival training",
+            "effect": "Vitality +10"
+          }
+        ],
+        "display_phase": null,
+        "display_source": null,
+        "card_id": 2
+      }
+    ],
+    "title": [
+      "Training direction"
+    ],
+    "choices": [
+      "Attack training",
+      "Survival training"
+    ],
+    "state": "confirm",
+    "candidates": [
+      {
+        "phase": "1",
+        "score": 1.0
+      },
+      {
+        "phase": "2",
+        "score": 1.0
+      }
+    ]
+  },
+  {
+    "name": "reversed",
+    "events": [
+      {
+        "title": "Training direction",
+        "phase": "1",
+        "source": "Fixture",
+        "options": [
+          {
+            "order": 1,
+            "text": "Attack training",
+            "effect": "Strength +10"
+          },
+          {
+            "order": 2,
+            "text": "Survival training",
+            "effect": "Vitality +10"
+          }
+        ],
+        "display_phase": null,
+        "display_source": null,
+        "card_id": null
+      }
+    ],
+    "title": [
+      "Training direction"
+    ],
+    "choices": [
+      "Survival training",
+      "Attack training"
+    ],
+    "state": "confirm",
+    "candidates": [
+      {
+        "phase": "1",
+        "score": 0.825
+      }
+    ]
+  }
+]

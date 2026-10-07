@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "files": [
+    "journeys",
+    "arcanas",
+    "journey_items",
+    "potentials",
+    "stat_potentials",
+    "journey_buffs"
+  ],
+  "languages": {
+    "zh-CN": "简体中文",
+    "zh-TW": "繁體中文",
+    "en-US": "English",
+    "ja-JP": "日本語",
+    "ko-KR": "한국어"
+  },
+  "difficulties": {
+    "Easy": 1,
+    "Normal": 1.5,
+    "Hard": 2.5
+  },
+  "regions": {
+    "title": [
+      0.115,
+      0.155,
+      0.25,
+      0.23
+    ],
+    "options": [
+      0.655,
+      0.48,
+      0.995,
+      0.835
+    ],
+    "card": [
+      0.03,
+      0.11,
+      0.115,
+      0.27
+    ]
+  }
+}

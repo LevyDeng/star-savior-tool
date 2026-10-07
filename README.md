@@ -1,10 +1,12 @@
-# StarSavior Guide Demo (Windows)
+# starsaviorhelper (Windows / Android)
 
 A local game screenshot OCR assistant using [Star Savior Arcana DB](https://star-savior-arcana-db.pages.dev/journey) as its only guide source.
 
+The native Android minimal demo lives in [android/](android/README.md). It supports website synchronization, offline multilingual guide lookup, local OCR of fullscreen landscape games, SSL settings and a manually triggered glass-star floating button. Build with `build-android.ps1`; APKs go into timestamped `dist/` folders. The Android demo retains manual support-card candidate selection and still needs real-device game acceptance. The existing Windows app remains in place. Portable vocabulary and desktop-generated parity fixtures live in [shared/](shared/README.md).
+
 ## Start
 
-For the portable build, extract the timestamped `StarSaviorHelper-Windows.zip` from a folder under `dist/` and double-click `StarSaviorHelper.exe` inside the extracted folder. Keep the `_internal` folder next to the executable. No Python installation or terminal window is required. All five OCR language models are bundled; guide synchronization still needs internet access. The executable uses the same per-user settings and database as the source version.
+For the portable build, extract the timestamped `starsaviorhelper-Windows.zip` from a folder under `dist/` and double-click `starsaviorhelper.exe` inside the extracted folder. Keep the `_internal` folder next to the executable. No Python installation or terminal window is required. All five OCR language models are bundled; guide synchronization still needs internet access. The executable uses the same per-user settings and database as the source version.
 
 To run from source, install Python 3.11 and double-click `start.cmd`. The first launch installs pinned dependencies in `.venv` and automatically synchronizes if no website cache exists. Use the sync button for later updates. Daily lookup uses the offline cache.
 
@@ -12,9 +14,9 @@ Only one helper can run per Windows login session. A named application mutex is 
 
 ## Windows portable build
 
-Run `powershell -ExecutionPolicy Bypass -File build.ps1` after setting up the source environment. The script installs the pinned packaging tools and creates `dist/<timestamp>/StarSaviorHelper-Windows.zip`; extract it and keep the `_internal` folder beside the executable. The PyInstaller work directory (`build/`) and distribution directory (`dist/`) are generated locally and excluded from Git.
+Run `powershell -ExecutionPolicy Bypass -File build.ps1` after setting up the source environment. The script installs the pinned packaging tools and creates `dist/<timestamp>/starsaviorhelper-Windows.zip`; extract it and keep the `_internal` folder beside the executable. The PyInstaller work directory (`build/`) and distribution directory (`dist/`) are generated locally and excluded from Git.
 
-To verify a packaged build, run `StarSaviorHelper.exe --self-test <isolated-output-directory>`. It opens the interface and runs local OCR in all five languages without changing the player's saved settings. An optional `card-probe.png` game screenshot and `card-probe.json` containing `expected_card_id`, alongside a synchronized test `website.sqlite3`, also verify card disambiguation through the real OCR worker and result interface. Windowed execution writes diagnostics to `application.log` in the user data directory.
+To verify a packaged build, run `starsaviorhelper.exe --self-test <isolated-output-directory>`. It opens the interface and runs local OCR in all five languages without changing the player's saved settings. An optional `card-probe.png` game screenshot and `card-probe.json` containing `expected_card_id`, alongside a synchronized test `website.sqlite3`, also verify card disambiguation through the real OCR worker and result interface. Windowed execution writes diagnostics to `application.log` in the user data directory.
 
 Tencent Docs, login, spreadsheet imports, copied tables, guide screenshot OCR, automated scrolling, and collection recovery have been removed. Existing legacy user files and browser sessions are untouched and are not queried.
 
@@ -34,13 +36,13 @@ Missing fixed effect labels in the website's Chinese interface do not imply miss
 
 Main results and candidate labels show human-readable phases and source/card names. Source event/card identifiers remain internal for validation and are available by hovering over the result or a candidate for diagnostics. They are not shown as dates or repeated in choice effects. Multiple outcome variants retain localized numbered variant labels and their conditions.
 
-The app uses a restrained blue-white theme. Settings show guide synchronization and the source link on the first row, proxy settings and difficulty on the second row, with the language selector in the custom title bar immediately before the window controls, and a circular Start button at the bottom right. Choice effects appear in the floating results window. Candidate selection and recognized source text are collapsed by default and reset to collapsed on each scan. The text itself has no inner scrollbars; the results window grows to fit until the available screen height is reached, after which the entire result panel scrolls. Long explanations wrap at the current window width, and expanding a detail section recalculates the required height.
+The app uses a restrained blue-white theme. Settings show guide synchronization and the source link on the first row, proxy settings and journey difficulty on the second row, with the language selector in the custom title bar immediately before the window controls, and a circular Start button at the bottom right. Choice effects appear in the floating results window. Candidate selection and recognized source text are collapsed by default and reset to collapsed on each scan. The text itself has no inner scrollbars; the results window grows to fit until the available screen height is reached, after which the entire result panel scrolls. Long explanations wrap at the current window width, and expanding a detail section recalculates the required height.
 
 ## Languages and recognition
 
 Select Simplified Chinese, Traditional Chinese, English, Japanese, or Korean. The selector changes interface labels, floating controls/results, guide text, match language, and RapidOCR recognition model. It is saved per user. All guide languages are synchronized together, and switching cached languages works offline. The portable build includes the OCR models for all five languages. When running from source, models download on first use and are cached locally. Other-language screenshot accuracy has not yet been measured.
 
-Select the game window and click Start to enable the floating button. Click to scan; drag to move; right-click for settings or exit. Ctrl+Alt+S also triggers recognition. The app hides its controls and overlays before capture. Title and choices are independently read from the same frame. Adjust the recognition regions when the layout/aspect ratio changes; settings are relative to the client area and saved by window title.
+Select the game window and click Start to enable the floating button. Click the glass star to scan; drag to move; right-click for settings, model memory release or exit. A light-blue animated rim indicates recognition in progress. Ctrl+Alt+S also triggers recognition. The app hides its controls and overlays before capture. Title and choices are independently read from the same frame. Adjust the recognition regions when the layout/aspect ratio changes; settings are relative to the client area and saved by window title.
 
 Support cards can share identical event titles and choices while providing different rewards. When text matching leaves multiple support-card identities, the same captured frame supplies the top-left card image. Local SIFT feature matching and a perspective consistency check resolve a clear winner and select its event automatically. The result status and recognized-text details show the localized card name instead of diagnostic JSON. Matching is limited to the text candidates; no large vision model is needed. When card images or text remain ambiguous, the highest-scoring event is displayed automatically and the collapsed candidate list remains available for manual switching. Multiple unresolved candidates on the same card are handled the same way.
 

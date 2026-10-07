@@ -1,0 +1,706 @@
+{
+  "raw": {
+    "journeys": {
+      "Afternoon": [
+        {
+          "id": 1,
+          "name": {
+            "zh-CN": "An afternoon",
+            "zh-TW": "An afternoon",
+            "en-US": "An afternoon",
+            "ja-JP": "An afternoon",
+            "ko-KR": "An afternoon"
+          },
+          "times": [
+            "March"
+          ],
+          "choices": [
+            {
+              "name": {
+                "zh-CN": "Train",
+                "zh-TW": "Train",
+                "en-US": "Train",
+                "ja-JP": "Train",
+                "ko-KR": "Train"
+              },
+              "condition": {
+                "type": "RR_STAT",
+                "target": "JST_POWER",
+                "value": 200
+              },
+              "success_rewards": [
+                [
+                  {
+                    "type": "RT_POTEN_POINT",
+                    "min": 20,
+                    "max": 20
+                  }
+                ],
+                [
+                  {
+                    "type": "RT_STAT",
+                    "reward_stat": "JST_FOCUS",
+                    "min": 20,
+                    "max": 30
+                  }
+                ],
+                [
+                  {
+                    "type": "RT_JOURNEY_ITEM",
+                    "reward_id": 1,
+                    "min": 1,
+                    "max": 1
+                  }
+                ]
+              ],
+              "failure_rewards": [
+                [
+                  {
+                    "type": "RT_STAMINA",
+                    "min": -5,
+                    "max": -5
+                  }
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "arcanas": [
+      {
+        "id": 99,
+        "name": {
+          "zh-CN": "Card",
+          "zh-TW": "Card",
+          "en-US": "Card",
+          "ja-JP": "Card",
+          "ko-KR": "Card"
+        },
+        "events": [
+          {
+            "id": 2,
+            "name": {
+              "zh-CN": "An afternoon",
+              "zh-TW": "An afternoon",
+              "en-US": "An afternoon",
+              "ja-JP": "An afternoon",
+              "ko-KR": "An afternoon"
+            },
+            "times": [
+              "March"
+            ],
+            "choices": [
+              {
+                "name": {
+                  "zh-CN": "Train",
+                  "zh-TW": "Train",
+                  "en-US": "Train",
+                  "ja-JP": "Train",
+                  "ko-KR": "Train"
+                },
+                "condition": {
+                  "type": "RR_STAT",
+                  "target": "JST_POWER",
+                  "value": 200
+                },
+                "success_rewards": [
+                  [
+                    {
+                      "type": "RT_POTEN_POINT",
+                      "min": 20,
+                      "max": 20
+                    }
+                  ],
+                  [
+                    {
+                      "type": "RT_STAT",
+                      "reward_stat": "JST_FOCUS",
+                      "min": 20,
+                      "max": 30
+                    }
+                  ],
+                  [
+                    {
+                      "type": "RT_JOURNEY_ITEM",
+                      "reward_id": 1,
+                      "min": 1,
+                      "max": 1
+                    }
+                  ]
+                ],
+                "failure_rewards": [
+                  [
+                    {
+                      "type": "RT_STAMINA",
+                      "min": -5,
+                      "max": -5
+                    }
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "journey_items": [
+      {
+        "id": 1,
+        "name": {
+          "zh-CN": "Survey relic",
+          "zh-TW": "Survey relic",
+          "en-US": "Survey relic",
+          "ja-JP": "Survey relic",
+          "ko-KR": "Survey relic"
+        },
+        "desc": {
+          "zh-CN": "Reference description",
+          "zh-TW": "Reference description",
+          "en-US": "Reference description",
+          "ja-JP": "Reference description",
+          "ko-KR": "Reference description"
+        }
+      }
+    ],
+    "potentials": [
+      {
+        "id": 1,
+        "name": {
+          "zh-CN": "Survey relic",
+          "zh-TW": "Survey relic",
+          "en-US": "Survey relic",
+          "ja-JP": "Survey relic",
+          "ko-KR": "Survey relic"
+        },
+        "desc": {
+          "zh-CN": "Reference description",
+          "zh-TW": "Reference description",
+          "en-US": "Reference description",
+          "ja-JP": "Reference description",
+          "ko-KR": "Reference description"
+        }
+      }
+    ],
+    "stat_potentials": [
+      {
+        "id": 1,
+        "name": {
+          "zh-CN": "Survey relic",
+          "zh-TW": "Survey relic",
+          "en-US": "Survey relic",
+          "ja-JP": "Survey relic",
+          "ko-KR": "Survey relic"
+        },
+        "desc": {
+          "zh-CN": "Reference description",
+          "zh-TW": "Reference description",
+          "en-US": "Reference description",
+          "ja-JP": "Reference description",
+          "ko-KR": "Reference description"
+        }
+      }
+    ],
+    "journey_buffs": [
+      {
+        "id": 1,
+        "name": {
+          "zh-CN": "Survey relic",
+          "zh-TW": "Survey relic",
+          "en-US": "Survey relic",
+          "ja-JP": "Survey relic",
+          "ko-KR": "Survey relic"
+        },
+        "desc": {
+          "zh-CN": "Reference description",
+          "zh-TW": "Reference description",
+          "en-US": "Reference description",
+          "ja-JP": "Reference description",
+          "ko-KR": "Reference description"
+        }
+      }
+    ]
+  },
+  "expected": {
+    "zh-CN/Easy": [
+      {
+        "title": "An afternoon",
+        "phase": "1",
+        "source": "Website / Journey / 1",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n条件/消耗: 力量 >=200\n成功: 潜质点 +20; 集中 +20~+30; Survey relic (Reference description) +1\n失败: 耐力 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "旅程事件",
+        "card_id": null
+      },
+      {
+        "title": "An afternoon",
+        "phase": "2",
+        "source": "Website / Arcana / Card / 99",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n条件/消耗: 力量 >=200\n成功: 潜质点 +20; 集中 +20~+30; Survey relic (Reference description) +1\n失败: 耐力 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "支援卡：Card",
+        "card_id": 99
+      }
+    ],
+    "zh-CN/Normal": [
+      {
+        "title": "An afternoon",
+        "phase": "1",
+        "source": "Website / Journey / 1",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n条件/消耗: 力量 >=200\n成功: 潜质点 +30; 集中 +20~+30; Survey relic (Reference description) +1\n失败: 耐力 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "旅程事件",
+        "card_id": null
+      },
+      {
+        "title": "An afternoon",
+        "phase": "2",
+        "source": "Website / Arcana / Card / 99",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n条件/消耗: 力量 >=200\n成功: 潜质点 +30; 集中 +20~+30; Survey relic (Reference description) +1\n失败: 耐力 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "支援卡：Card",
+        "card_id": 99
+      }
+    ],
+    "zh-CN/Hard": [
+      {
+        "title": "An afternoon",
+        "phase": "1",
+        "source": "Website / Journey / 1",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n条件/消耗: 力量 >=200\n成功: 潜质点 +50; 集中 +20~+30; Survey relic (Reference description) +1\n失败: 耐力 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "旅程事件",
+        "card_id": null
+      },
+      {
+        "title": "An afternoon",
+        "phase": "2",
+        "source": "Website / Arcana / Card / 99",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n条件/消耗: 力量 >=200\n成功: 潜质点 +50; 集中 +20~+30; Survey relic (Reference description) +1\n失败: 耐力 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "支援卡：Card",
+        "card_id": 99
+      }
+    ],
+    "zh-TW/Easy": [
+      {
+        "title": "An afternoon",
+        "phase": "1",
+        "source": "Website / Journey / 1",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n條件/消耗: 力量 >=200\n成功: 潛質點 +20; 集中 +20~+30; Survey relic (Reference description) +1\n失敗: 耐力 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "旅程事件",
+        "card_id": null
+      },
+      {
+        "title": "An afternoon",
+        "phase": "2",
+        "source": "Website / Arcana / Card / 99",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n條件/消耗: 力量 >=200\n成功: 潛質點 +20; 集中 +20~+30; Survey relic (Reference description) +1\n失敗: 耐力 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "支援卡：Card",
+        "card_id": 99
+      }
+    ],
+    "zh-TW/Normal": [
+      {
+        "title": "An afternoon",
+        "phase": "1",
+        "source": "Website / Journey / 1",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n條件/消耗: 力量 >=200\n成功: 潛質點 +30; 集中 +20~+30; Survey relic (Reference description) +1\n失敗: 耐力 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "旅程事件",
+        "card_id": null
+      },
+      {
+        "title": "An afternoon",
+        "phase": "2",
+        "source": "Website / Arcana / Card / 99",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n條件/消耗: 力量 >=200\n成功: 潛質點 +30; 集中 +20~+30; Survey relic (Reference description) +1\n失敗: 耐力 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "支援卡：Card",
+        "card_id": 99
+      }
+    ],
+    "zh-TW/Hard": [
+      {
+        "title": "An afternoon",
+        "phase": "1",
+        "source": "Website / Journey / 1",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n條件/消耗: 力量 >=200\n成功: 潛質點 +50; 集中 +20~+30; Survey relic (Reference description) +1\n失敗: 耐力 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "旅程事件",
+        "card_id": null
+      },
+      {
+        "title": "An afternoon",
+        "phase": "2",
+        "source": "Website / Arcana / Card / 99",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n條件/消耗: 力量 >=200\n成功: 潛質點 +50; 集中 +20~+30; Survey relic (Reference description) +1\n失敗: 耐力 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "支援卡：Card",
+        "card_id": 99
+      }
+    ],
+    "en-US/Easy": [
+      {
+        "title": "An afternoon",
+        "phase": "1",
+        "source": "Website / Journey / 1",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\nRequirement/cost: Strength >=200\nSuccess: Potential Point +20; Focus +20~+30; Survey relic (Reference description) +1\nFailure: Stamina -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "Journey event",
+        "card_id": null
+      },
+      {
+        "title": "An afternoon",
+        "phase": "2",
+        "source": "Website / Arcana / Card / 99",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\nRequirement/cost: Strength >=200\nSuccess: Potential Point +20; Focus +20~+30; Survey relic (Reference description) +1\nFailure: Stamina -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "Arcana: Card",
+        "card_id": 99
+      }
+    ],
+    "en-US/Normal": [
+      {
+        "title": "An afternoon",
+        "phase": "1",
+        "source": "Website / Journey / 1",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\nRequirement/cost: Strength >=200\nSuccess: Potential Point +30; Focus +20~+30; Survey relic (Reference description) +1\nFailure: Stamina -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "Journey event",
+        "card_id": null
+      },
+      {
+        "title": "An afternoon",
+        "phase": "2",
+        "source": "Website / Arcana / Card / 99",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\nRequirement/cost: Strength >=200\nSuccess: Potential Point +30; Focus +20~+30; Survey relic (Reference description) +1\nFailure: Stamina -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "Arcana: Card",
+        "card_id": 99
+      }
+    ],
+    "en-US/Hard": [
+      {
+        "title": "An afternoon",
+        "phase": "1",
+        "source": "Website / Journey / 1",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\nRequirement/cost: Strength >=200\nSuccess: Potential Point +50; Focus +20~+30; Survey relic (Reference description) +1\nFailure: Stamina -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "Journey event",
+        "card_id": null
+      },
+      {
+        "title": "An afternoon",
+        "phase": "2",
+        "source": "Website / Arcana / Card / 99",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\nRequirement/cost: Strength >=200\nSuccess: Potential Point +50; Focus +20~+30; Survey relic (Reference description) +1\nFailure: Stamina -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "Arcana: Card",
+        "card_id": 99
+      }
+    ],
+    "ja-JP/Easy": [
+      {
+        "title": "An afternoon",
+        "phase": "1",
+        "source": "Website / Journey / 1",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n条件・消費: 力 >=200\n成功: 潜在力ポイント +20; 集中 +20~+30; Survey relic (Reference description) +1\n失敗: スタミナ -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "旅程イベント",
+        "card_id": null
+      },
+      {
+        "title": "An afternoon",
+        "phase": "2",
+        "source": "Website / Arcana / Card / 99",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n条件・消費: 力 >=200\n成功: 潜在力ポイント +20; 集中 +20~+30; Survey relic (Reference description) +1\n失敗: スタミナ -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "アルカナ：Card",
+        "card_id": 99
+      }
+    ],
+    "ja-JP/Normal": [
+      {
+        "title": "An afternoon",
+        "phase": "1",
+        "source": "Website / Journey / 1",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n条件・消費: 力 >=200\n成功: 潜在力ポイント +30; 集中 +20~+30; Survey relic (Reference description) +1\n失敗: スタミナ -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "旅程イベント",
+        "card_id": null
+      },
+      {
+        "title": "An afternoon",
+        "phase": "2",
+        "source": "Website / Arcana / Card / 99",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n条件・消費: 力 >=200\n成功: 潜在力ポイント +30; 集中 +20~+30; Survey relic (Reference description) +1\n失敗: スタミナ -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "アルカナ：Card",
+        "card_id": 99
+      }
+    ],
+    "ja-JP/Hard": [
+      {
+        "title": "An afternoon",
+        "phase": "1",
+        "source": "Website / Journey / 1",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n条件・消費: 力 >=200\n成功: 潜在力ポイント +50; 集中 +20~+30; Survey relic (Reference description) +1\n失敗: スタミナ -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "旅程イベント",
+        "card_id": null
+      },
+      {
+        "title": "An afternoon",
+        "phase": "2",
+        "source": "Website / Arcana / Card / 99",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n条件・消費: 力 >=200\n成功: 潜在力ポイント +50; 集中 +20~+30; Survey relic (Reference description) +1\n失敗: スタミナ -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "アルカナ：Card",
+        "card_id": 99
+      }
+    ],
+    "ko-KR/Easy": [
+      {
+        "title": "An afternoon",
+        "phase": "1",
+        "source": "Website / Journey / 1",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n조건/소모: 힘 >=200\n성공: 잠재력 포인트 +20; 집중 +20~+30; Survey relic (Reference description) +1\n실패: 스태미나 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "여정 이벤트",
+        "card_id": null
+      },
+      {
+        "title": "An afternoon",
+        "phase": "2",
+        "source": "Website / Arcana / Card / 99",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n조건/소모: 힘 >=200\n성공: 잠재력 포인트 +20; 집중 +20~+30; Survey relic (Reference description) +1\n실패: 스태미나 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "아르카나: Card",
+        "card_id": 99
+      }
+    ],
+    "ko-KR/Normal": [
+      {
+        "title": "An afternoon",
+        "phase": "1",
+        "source": "Website / Journey / 1",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n조건/소모: 힘 >=200\n성공: 잠재력 포인트 +30; 집중 +20~+30; Survey relic (Reference description) +1\n실패: 스태미나 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "여정 이벤트",
+        "card_id": null
+      },
+      {
+        "title": "An afternoon",
+        "phase": "2",
+        "source": "Website / Arcana / Card / 99",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n조건/소모: 힘 >=200\n성공: 잠재력 포인트 +30; 집중 +20~+30; Survey relic (Reference description) +1\n실패: 스태미나 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "아르카나: Card",
+        "card_id": 99
+      }
+    ],
+    "ko-KR/Hard": [
+      {
+        "title": "An afternoon",
+        "phase": "1",
+        "source": "Website / Journey / 1",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n조건/소모: 힘 >=200\n성공: 잠재력 포인트 +50; 집중 +20~+30; Survey relic (Reference description) +1\n실패: 스태미나 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "여정 이벤트",
+        "card_id": null
+      },
+      {
+        "title": "An afternoon",
+        "phase": "2",
+        "source": "Website / Arcana / Card / 99",
+        "options": [
+          {
+            "order": 1,
+            "text": "Train",
+            "effect": "[March]\n조건/소모: 힘 >=200\n성공: 잠재력 포인트 +50; 집중 +20~+30; Survey relic (Reference description) +1\n실패: 스태미나 -5"
+          }
+        ],
+        "display_phase": "March",
+        "display_source": "아르카나: Card",
+        "card_id": 99
+      }
+    ]
+  }
+}

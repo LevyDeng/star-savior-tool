@@ -97,7 +97,7 @@ _rows = {
 _rows.update({
  'data_updated_hint': ('最近一次成功同步本地攻略的时间（本地时区）。', '最近一次成功同步本地攻略的時間（本地時區）。', 'Last successful local guide synchronization, in your local timezone.', 'ローカルデータの最終同期日時（現地時間）。', '로컬 시간 기준 마지막 데이터 동기화 시간입니다.'),
  'start': ('启动', '啟動', 'Start', '開始', '시작'),
- 'difficulty': ('游戏难度', '遊戲難度', 'Game difficulty', 'ゲーム難易度', '게임 난이도'),
+ 'difficulty': ('旅程难度', '旅程難度', 'Journey difficulty', '旅程の難易度', '여정 난이도'),
  'Easy': ('简单', '簡單', 'Easy', 'イージー', '이지'),
  'Normal': ('普通', '普通', 'Normal', 'ノーマル', '노말'),
  'Hard': ('困难', '困難', 'Hard', 'ハード', '하드'),

@@ -20,7 +20,7 @@ a.binaries = [entry for entry in a.binaries
 pyz = PYZ(a.pure)
 exe = EXE(
     pyz, a.scripts, [], exclude_binaries=True,
-    name='StarSaviorHelper', debug=False, bootloader_ignore_signals=False,
+    name='starsaviorhelper', debug=False, bootloader_ignore_signals=False,
     strip=False, upx=False, console=False,
 )
-coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name='StarSaviorHelper')
+coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name='starsaviorhelper')

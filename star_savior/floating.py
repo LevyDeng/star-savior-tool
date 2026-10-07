@@ -1,6 +1,6 @@
 """Small draggable scan button and independent non-modal results panel."""
-from PySide6.QtCore import QPoint, Qt, Signal, QTimer
-from PySide6.QtGui import QColor, QGuiApplication, QPainter, QPen
+from PySide6.QtCore import QPoint, QPointF, QRectF, Qt, Signal, QTimer
+from PySide6.QtGui import QColor, QConicalGradient, QLinearGradient, QRadialGradient, QGuiApplication, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QApplication, QDialog, QLabel, QListWidget, QMenu, QTextBrowser, QVBoxLayout, QWidget
 from .i18n import tr
 from .presentation import ResultPanel, THEME
@@ -35,17 +35,38 @@ class FloatingButton(NonActivatingWindow, QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.setAttribute(Qt.WidgetAttribute.WA_QuitOnClose, False)
         self.setFixedSize(72, 72)
-        self.setToolTip('单击识别；拖动可移动；右键打开设置或退出。')
+        self.setToolTip(tr('capture', 'zh-CN'))
         self.busy = False
         self.language = 'zh-CN'
         self.origin = None
         self.start_position = None
         self.dragged = False
+        self.angle = 0
+        self.animation = QTimer(self)
+        self.animation.setInterval(33)
+        self.animation.timeout.connect(self.advance_animation)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
     def set_busy(self, busy):
         self.busy = busy
+        if busy and self.isVisible():
+            self.animation.start()
+        else:
+            self.animation.stop()
         self.update()
+
+    def advance_animation(self):
+        self.angle = (self.angle + 7) % 360
+        self.update()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if self.busy:
+            self.animation.start()
+
+    def hideEvent(self, event):
+        self.animation.stop()
+        super().hideEvent(event)
 
     def set_language(self, language):
         self.language = language
@@ -55,11 +76,44 @@ class FloatingButton(NonActivatingWindow, QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setPen(QPen(QColor('#d9ecff'), 3))
-        painter.setBrush(QColor('#88a8c1') if self.busy else QColor('#357db9'))
-        painter.drawEllipse(4, 4, 64, 64)
-        painter.setPen(QColor('white'))
-        painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, '...' if self.busy else tr('scan', self.language))
+        shadow = QRadialGradient(QPointF(36, 42), 35)
+        shadow.setColorAt(0, QColor(12, 40, 74, 100))
+        shadow.setColorAt(.7, QColor(12, 40, 74, 35))
+        shadow.setColorAt(1, QColor(12, 40, 74, 0))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(shadow)
+        painter.drawEllipse(QRectF(1, 9, 70, 62))
+        body = QRectF(7, 4, 58, 58)
+        glass = QLinearGradient(14, 4, 51, 62)
+        for stop, color in ((0, '#c1e8ff'), (.32, '#65afe6'), (.68, '#337fba'), (1, '#174879')):
+            glass.setColorAt(stop, QColor(color))
+        painter.setBrush(glass)
+        painter.setPen(QPen(QColor(226, 247, 255, 220), 1.5))
+        painter.drawEllipse(body)
+        highlight = QLinearGradient(0, 7, 0, 35)
+        highlight.setColorAt(0, QColor(255, 255, 255, 150))
+        highlight.setColorAt(1, QColor(255, 255, 255, 0))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(highlight)
+        painter.drawEllipse(QRectF(14, 8, 44, 24))
+        star = QPainterPath(QPointF(36, 17))
+        for x, y in ((40, 29), (52, 33), (40, 37), (36, 49), (32, 37), (20, 33), (32, 29)):
+            star.lineTo(x, y)
+        star.closeSubpath()
+        painter.save()
+        painter.translate(0, 1.5)
+        painter.fillPath(star, QColor(13, 57, 93, 90))
+        painter.restore()
+        painter.fillPath(star, QColor('#f3fbff'))
+        if self.busy:
+            sheen = QConicalGradient(QPointF(36, 33), -self.angle)
+            for stop, color in ((0, QColor(123, 207, 255, 0)), (.3, QColor('#82d8ff')),
+                                (.48, QColor('#effcff')), (.55, QColor('#a2e6ff')),
+                                (.75, QColor(123, 207, 255, 0)), (1, QColor(123, 207, 255, 0))):
+                sheen.setColorAt(stop, color)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.setPen(QPen(sheen, 3))
+            painter.drawEllipse(QRectF(3, 0, 66, 66))
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -110,7 +164,7 @@ class FloatingResults(NonActivatingWindow, QDialog):
     def __init__(self, parent=None):
         super().__init__(parent, Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint |
                          Qt.WindowType.WindowDoesNotAcceptFocus)
-        self.setWindowTitle('StarSavior · 事件效果')
+        self.setWindowTitle('starsaviorhelper')
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.setAttribute(Qt.WidgetAttribute.WA_QuitOnClose, False)
         self.resize(520, 320)
@@ -129,7 +183,7 @@ class FloatingResults(NonActivatingWindow, QDialog):
         self.set_language('zh-CN')
 
     def set_language(self, language):
-        self.setWindowTitle('StarSavior · ' + tr('effects', language))
+        self.setWindowTitle('starsaviorhelper · ' + tr('effects', language))
         self.panel.set_language(language)
 
     def clear_results(self):

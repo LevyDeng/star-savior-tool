@@ -141,7 +141,7 @@ class Hotkey(QAbstractNativeEventFilter):
 class MainWindow(QMainWindow):
     def __init__(self, data_dir):
         super().__init__()
-        self.setWindowTitle('StarSavior')
+        self.setWindowTitle('starsaviorhelper')
         self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
         self.resize(820, 410)
         self.setStyleSheet(THEME)
@@ -184,7 +184,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(body)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(12)
-        brand = QLabel('STAR SAVIOR')
+        brand = QLabel('starsaviorhelper')
         brand.setStyleSheet('font-size: 22px; font-weight: 700; color: #357db9; letter-spacing: 2px;')
         layout.addWidget(brand)
         self.summary = QLabel()
@@ -221,10 +221,10 @@ class MainWindow(QMainWindow):
         self.window_list.currentIndexChanged.connect(self.window_changed)
         row.addWidget(self.window_list, 1)
         refresh = self.button('refresh', self.refresh_windows)
-        
+
         row.addWidget(refresh)
         self.select_region = self.button('regions', lambda: self.prepare_capture(True))
-        
+
         row.addWidget(self.select_region)
         layout.addLayout(row)
         self.status = QLabel()
@@ -286,7 +286,7 @@ class MainWindow(QMainWindow):
         return widget
 
     def retranslate(self):
-        self.setWindowTitle('StarSavior · ' + self.t('settings'))
+        self.setWindowTitle('starsaviorhelper · ' + self.t('settings'))
         self.language_list.setToolTip(self.t('language'))
         self.language_list.setAccessibleName(self.t('language'))
         for widget, key in self.translatable:
@@ -653,6 +653,7 @@ def main():
     app = QApplication(sys.argv)
     app.setFont(QFont('Segoe UI', 10))
     app.setApplicationName('StarSaviorGuideDemo')
+    app.setApplicationDisplayName('starsaviorhelper')
     app.setOrganizationName('StarSaviorTool')
     data_dir = Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation))
     # Tests can use an isolated directory without touching the user's browser profile.
@@ -665,7 +666,7 @@ def main():
         language = QSettings(str(data_dir / 'settings.ini'), QSettings.Format.IniFormat).value('language', 'zh-CN')
         if language not in LANGUAGES:
             language = 'zh-CN'
-        QMessageBox.information(None, 'StarSavior', tr('already_running', language))
+        QMessageBox.information(None, 'starsaviorhelper', tr('already_running', language))
         return
     try:
         window = MainWindow(data_dir)
