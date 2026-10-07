@@ -246,7 +246,7 @@ class MainWindow(QMainWindow):
         row.addWidget(self.label('floating_transparency'))
         self.button_transparency = QSlider(Qt.Orientation.Horizontal)
         self.button_transparency.setRange(0, 90)
-        self.button_transparency.setValue(self.settings.value('floating_transparency', 50, type=int))
+        self.button_transparency.setValue(self.settings.value('floating_transparency', 0, type=int))
         row.addWidget(self.button_transparency, 1)
         self.button_transparency_value = QLabel()
         self.button_transparency_value.setMinimumWidth(40)

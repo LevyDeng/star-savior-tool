@@ -8,6 +8,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
@@ -48,6 +49,13 @@ class CaptureService : Service() {
     private var waitingForFrame = false
     private var closing = false
     private var lastScan = 0L
+    private val appearanceListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == "floating_size" || key == "floating_transparency") {
+            main.post {
+                if (!closing && scanButton?.isAttachedToWindow == true) applyButtonAppearance()
+            }
+        }
+    }
     private val timeout = Runnable {
         if (waitingForFrame && !closing) {
             waitingForFrame = false; busy = false
@@ -57,6 +65,24 @@ class CaptureService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        Ui.preferences(this).registerOnSharedPreferenceChangeListener(appearanceListener)
+    }
+
+    private fun applyButtonAppearance() {
+        val button = scanButton ?: return
+        val layout = buttonParams ?: return
+        val prefs = Ui.preferences(this)
+        val size = Ui.dp(this, prefs.getInt("floating_size", 72).coerceIn(40, 160))
+        button.alpha = 1f - prefs.getInt("floating_transparency", 0).coerceIn(0, 90) / 100f
+        layout.width = size; layout.height = size
+        val (width, height) = screenSize()
+        layout.x = layout.x.coerceIn(0, (width - size).coerceAtLeast(0))
+        layout.y = layout.y.coerceIn(0, (height - size).coerceAtLeast(0))
+        if (button.isAttachedToWindow) windows.updateViewLayout(button, layout)
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == "STOP") { stopSelf(); return START_NOT_STICKY }
@@ -178,7 +204,7 @@ class CaptureService : Service() {
 
     private fun showButton() {
         if (closing || !Settings.canDrawOverlays(this)) return
-        val size = Ui.dp(this, 72)
+        val size = Ui.dp(this, Ui.preferences(this).getInt("floating_size", 72).coerceIn(40, 160))
         val button = scanButton ?: GlassScanButton(this).apply {
             scanButton = this
             setOnClickListener { capture() }
@@ -188,10 +214,12 @@ class CaptureService : Service() {
         button.contentDescription = Ui.text(this, "scan")
         button.setBusy(busy)
         val prefs = Ui.preferences(this)
+        button.alpha = 1f - prefs.getInt("floating_transparency", 0).coerceIn(0, 90) / 100f
         val layout = buttonParams ?: params(size, size).apply {
             x = prefs.getInt("button_x", 16); y = prefs.getInt("button_y", height / 3)
             buttonParams = this
         }
+        layout.width = size; layout.height = size
         layout.x = layout.x.coerceIn(0, (width - size).coerceAtLeast(0))
         layout.y = layout.y.coerceIn(0, (height - size).coerceAtLeast(0))
         var startX = 0f; var startY = 0f; var originX = 0; var originY = 0; var moved = false
@@ -206,8 +234,8 @@ class CaptureService : Service() {
                 MotionEvent.ACTION_MOVE -> {
                     if (abs(event.rawX - startX) + abs(event.rawY - startY) > Ui.dp(this, 8)) {
                         moved = true; main.removeCallbacks(hold)
-                        layout.x = (originX + event.rawX - startX).toInt().coerceIn(0, (width - size).coerceAtLeast(0))
-                        layout.y = (originY + event.rawY - startY).toInt().coerceIn(0, (height - size).coerceAtLeast(0))
+                        layout.x = (originX + event.rawX - startX).toInt().coerceIn(0, (width - layout.width).coerceAtLeast(0))
+                        layout.y = (originY + event.rawY - startY).toInt().coerceIn(0, (height - layout.height).coerceAtLeast(0))
                         if (button.isAttachedToWindow) windows.updateViewLayout(button, layout)
                     }
                 }
@@ -277,7 +305,7 @@ class CaptureService : Service() {
         val (width, height) = screenSize()
         val layout = params(minOf(Ui.dp(this, 220), width), WindowManager.LayoutParams.WRAP_CONTENT)
         layout.x = (buttonParams?.x ?: 0).coerceIn(0, (width - layout.width).coerceAtLeast(0))
-        layout.y = ((buttonParams?.y ?: 0) + Ui.dp(this, 72)).coerceIn(0, (height - Ui.dp(this, 200)).coerceAtLeast(0))
+        layout.y = ((buttonParams?.y ?: 0) + (buttonParams?.height ?: Ui.dp(this, 72))).coerceIn(0, (height - Ui.dp(this, 200)).coerceAtLeast(0))
         menuPanel = panel
         windows.addView(panel, layout)
     }
@@ -288,6 +316,7 @@ class CaptureService : Service() {
     }
 
     override fun onDestroy() {
+        Ui.preferences(this).unregisterOnSharedPreferenceChangeListener(appearanceListener)
         closing = true; running = false; waitingForFrame = false
         main.removeCallbacksAndMessages(null)
         if (::windows.isInitialized) {

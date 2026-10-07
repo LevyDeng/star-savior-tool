@@ -29,7 +29,7 @@ class FloatingButtonPreview(QWidget):
         super().__init__(parent)
         self.pixmap = pixmap
         self.icon_size = 72
-        self.transparency = 50
+        self.transparency = 0
         self.setFixedSize(176, 176)
 
     def set_appearance(self, size, transparency):
@@ -64,7 +64,7 @@ class FloatingButton(NonActivatingWindow, QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.setAttribute(Qt.WidgetAttribute.WA_QuitOnClose, False)
         self.setFixedSize(72, 72)
-        self.setWindowOpacity(0.5)
+        self.setWindowOpacity(1.0)
         self.icon_pixmap = QPixmap(str(Path(__file__).with_name('assets') / 'app-icon.png'))
         self.setToolTip(tr('capture', 'zh-CN'))
         self.busy = False

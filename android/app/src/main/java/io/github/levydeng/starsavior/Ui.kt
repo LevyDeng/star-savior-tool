@@ -41,6 +41,9 @@ object Ui {
     }
     fun preferences(context: Context) = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     private val extras = mapOf(
+        "floating_size" to listOf("悬浮按钮大小", "懸浮按鈕大小", "Floating button size", "フローティングボタンのサイズ", "플로팅 버튼 크기"),
+        "floating_transparency" to listOf("透明度（0% 不透明）", "透明度（0% 不透明）", "Transparency (0% opaque)", "透明度（0% 不透明）", "투명도 (0% 불투명)"),
+        "floating_preview" to listOf("实际大小预览", "實際大小預覽", "Actual-size preview", "実寸プレビュー", "실제 크기 미리보기"),
         "screen_permission" to listOf("授权屏幕捕获并启动", "授權螢幕擷取並啟動", "Authorize capture and start", "画面共有を許可して開始", "화면 캡처 허용 및 시작"),
         "overlay_permission" to listOf("允许显示悬浮窗", "允許顯示浮動視窗", "Allow floating windows", "オーバーレイを許可", "플로팅 창 허용"),
         "stop_capture" to listOf("停止悬浮识别", "停止浮動辨識", "Stop floating capture", "画面認識を停止", "플로팅 인식 중지"),

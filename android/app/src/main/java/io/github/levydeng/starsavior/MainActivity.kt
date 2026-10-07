@@ -17,8 +17,10 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
 import java.time.Instant
@@ -66,6 +68,7 @@ class MainActivity : Activity() {
         })
         optionsRow.addView(difficulty, LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = Ui.dp(this@MainActivity, 12) })
         body.addView(optionsRow)
+        addButtonAppearance(body)
         status = Ui.label(this, Ui.text(this, "share_hint"), 14f); body.addView(status)
         body.addView(View(this), LinearLayout.LayoutParams(1, 0, 1f))
         val bottom = LinearLayout(this).apply { gravity = Gravity.END }
@@ -75,6 +78,49 @@ class MainActivity : Activity() {
         body.addView(bottom)
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(body) })
         setBusy(busy); updateSummary()
+    }
+
+    private fun addButtonAppearance(body: LinearLayout) {
+        val prefs = Ui.preferences(this)
+        val preview = GlassScanButton(this).apply {
+            isClickable = false; isLongClickable = false
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }
+        val stage = FrameLayout(this).apply {
+            background = Ui.surface(android.graphics.Color.rgb(220, 230, 240))
+            addView(preview, FrameLayout.LayoutParams(1, 1, Gravity.CENTER))
+        }
+        fun updatePreview() {
+            val size = Ui.dp(this, prefs.getInt("floating_size", 72).coerceIn(40, 160))
+            preview.layoutParams = FrameLayout.LayoutParams(size, size, Gravity.CENTER)
+            preview.alpha = 1f - prefs.getInt("floating_transparency", 0).coerceIn(0, 90) / 100f
+        }
+        fun slider(key: String, label: String, minimum: Int, maximum: Int, initial: Int, unit: String) {
+            val value = prefs.getInt(key, initial).coerceIn(minimum, maximum)
+            val caption = Ui.label(this, "${Ui.text(this, label)}: $value $unit", 14f)
+            body.addView(caption)
+            body.addView(SeekBar(this).apply {
+                max = maximum - minimum; progress = value - minimum
+                contentDescription = Ui.text(this@MainActivity, label)
+                progressTintList = android.content.res.ColorStateList.valueOf(Ui.blue)
+                thumbTintList = android.content.res.ColorStateList.valueOf(Ui.blue)
+                setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onStartTrackingTouch(seekBar: SeekBar) = Unit
+                    override fun onStopTrackingTouch(seekBar: SeekBar) = Unit
+                    override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                        val selected = progress + minimum
+                        prefs.edit().putInt(key, selected).apply()
+                        caption.text = "${Ui.text(this@MainActivity, label)}: $selected $unit"
+                        updatePreview()
+                    }
+                })
+            }, LinearLayout.LayoutParams(-1, Ui.dp(this, 40)))
+        }
+        slider("floating_size", "floating_size", 40, 160, 72, "dp")
+        slider("floating_transparency", "floating_transparency", 0, 90, 0, "%")
+        body.addView(Ui.label(this, Ui.text(this, "floating_preview"), 14f).apply { gravity = Gravity.CENTER })
+        body.addView(stage, LinearLayout.LayoutParams(Ui.dp(this, 176), Ui.dp(this, 176)).apply { gravity = Gravity.CENTER_HORIZONTAL })
+        updatePreview()
     }
 
     private fun configureSsl() {
