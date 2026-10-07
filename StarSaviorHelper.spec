@@ -5,7 +5,7 @@ a = Analysis(
     ['launcher.py'],
     pathex=[],
     binaries=[],
-    datas=collect_data_files('rapidocr') + [('star_savior/assets/app-icon.png', 'star_savior/assets')],
+    datas=collect_data_files('rapidocr') + [('star_savior/assets/app-icon.png', 'star_savior/assets'), ('star_savior/assets/floating-icon.png', 'star_savior/assets')],
     hiddenimports=collect_submodules('rapidocr'),
     hookspath=[],
     hooksconfig={},

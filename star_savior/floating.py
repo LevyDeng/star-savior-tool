@@ -65,7 +65,7 @@ class FloatingButton(NonActivatingWindow, QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_QuitOnClose, False)
         self.setFixedSize(72, 72)
         self.setWindowOpacity(1.0)
-        self.icon_pixmap = QPixmap(str(Path(__file__).with_name('assets') / 'app-icon.png'))
+        self.icon_pixmap = QPixmap(str(Path(__file__).with_name('assets') / 'floating-icon.png'))
         self.setToolTip(tr('capture', 'zh-CN'))
         self.busy = False
         self.language = 'zh-CN'

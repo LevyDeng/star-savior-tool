@@ -14,7 +14,7 @@ import android.view.animation.LinearInterpolator
 
 class GlassScanButton(context: Context) : View(context) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val icon = BitmapFactory.decodeResource(resources, R.drawable.app_icon)
+    private val icon = BitmapFactory.decodeResource(resources, R.drawable.floating_icon)
     private val iconBounds = RectF(0f, 0f, 72f, 72f)
     private val sheen = SweepGradient(36f, 36f,
         intArrayOf(Color.TRANSPARENT, Color.rgb(115, 213, 160), Color.rgb(217, 255, 233),

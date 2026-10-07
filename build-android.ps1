@@ -101,11 +101,11 @@ try {
     }
     $taskOutput = Join-Path $taskRoot ('dist/' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
     New-Item -ItemType Directory -Path $taskOutput -Force | Out-Null
-    $taskApk = Join-Path $taskOutput 'starsaviorhelper-Android-demo.apk'
+    $taskApk = Join-Path $taskOutput 'starsaviorhelper-Android.apk'
     Copy-Item -LiteralPath (Join-Path $taskRoot 'android/app/build/outputs/apk/debug/app-debug.apk') -Destination $taskApk
     $taskHash = (Get-FileHash -LiteralPath $taskApk -Algorithm SHA256).Hash.ToLowerInvariant()
-    Set-Content -LiteralPath (Join-Path $taskOutput 'SHA256SUMS.txt') -Value "$taskHash  starsaviorhelper-Android-demo.apk" -Encoding ASCII
-    Write-Output "Android demo: $taskApk"
+    Set-Content -LiteralPath (Join-Path $taskOutput 'SHA256SUMS.txt') -Value "$taskHash  starsaviorhelper-Android.apk" -Encoding ASCII
+    Write-Output "Android APK: $taskApk"
 } finally {
     if ($taskBuildLock) { $taskBuildLock.Dispose() }
     $env:JAVA_HOME = $taskPreviousJava

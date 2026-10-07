@@ -1,6 +1,6 @@
-# Android minimal demo
+# Android app
 
-Native Kotlin application for Android 8.0 (API 26) and later. The application currently targets API 34 and is intended for sideloaded demo testing, not a Google Play release. Windows source and packaging remain in their existing locations.
+Native Kotlin application for Android 8.0 (API 26) and later. The application currently targets API 34 and is distributed as a sideloaded APK. Windows source and packaging remain in their existing locations.
 
 ## Build and install
 
@@ -27,7 +27,7 @@ keytool -genkeypair -keystore .signing/android-debug.keystore -storepass android
 
 ## First run
 
-1. Install `starsaviorhelper-Android-demo.apk` and open starsaviorhelper. Existing package identity and private cache are retained when updating.
+1. Install `starsaviorhelper-Android.apk` and open starsaviorhelper. Existing package identity and private cache are retained when updating.
 2. Choose game language from the header and journey difficulty, then synchronize the website guide.
 3. Tap Start, grant overlay permission and authorize full-display capture. Android 14+ explicitly requests the default display rather than app-only sharing.
 4. Open the game in fullscreen landscape and tap the glass star. Drag it to move; long-press for Open settings, Exit or Cancel. Long-press does not stop capture directly.
@@ -62,11 +62,11 @@ Logs use Android Logcat tags `GuideRepository`, `MainActivity` and `CaptureServi
 
 The Gradle build and JVM tests do not establish real-game screen-capture or OCR accuracy. Acceptance requires an installed APK on a phone: authorize capture, show a known event, tap Scan, verify title and every effect, retry without old results, rotate the device, stop/restart capture, test permission denial, and check duplicate support cards manually.
 
-Build verification includes JVM parity tests and a connection-scoped TLS test, APK compilation, and Android lint. User testing confirmed text recognition in the earlier demo. The updated full-display flow, long-press menu and animated overlay still require phone verification. Desktop tests cover rendering, timer visibility lifecycle, drag behavior, difficulty persistence and startup.
+Build verification includes JVM parity tests and a connection-scoped TLS test, APK compilation, and Android lint. User testing confirmed text recognition in an earlier build. The updated full-display flow, long-press menu and animated overlay still require phone verification. Desktop tests cover rendering, timer visibility lifecycle, drag behavior, difficulty persistence and startup.
 
 Implementation references: [Android MediaProjection](https://developer.android.com/media/grow/media-projection), [ML Kit text recognition](https://developers.google.com/ml-kit/vision/text-recognition/v2/android).
 
-The approved white glass icon has one pale-blue outer border and a faceted blue-white four-point star. Windows floating controls and the application use `star_savior/assets/app-icon.png`; the EXE build embeds the multi-size ICO. Android uses the same artwork for its floating button and density-specific/adaptive launcher icons. Launcher masking remains controlled by the Android launcher. The high-resolution transparent master is retained alongside the Windows assets.
+Application icons use a flat blue rounded square; floating buttons use a separate circular blue background. Both share a symmetric white four-point star with slightly rounded corners. Windows uses `star_savior/assets/app-icon.png` for the application and `floating-icon.png` for the overlay and its preview; the EXE embeds the multi-size ICO. Android uses `floating_icon.png` for its overlay and separate density-specific/adaptive launcher resources. Launcher masking remains controlled by Android. Run `tools/generate_app_icon.ps1` to regenerate all resources from the shared geometry.
 
 ## Windows Gradle cache recovery
 

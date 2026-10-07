@@ -2,7 +2,7 @@
 
 A local game screenshot OCR assistant using [Star Savior Arcana DB](https://star-savior-arcana-db.pages.dev/journey) as its only guide source.
 
-The native Android minimal demo lives in [android/](android/README.md). It supports website synchronization, offline multilingual guide lookup, local OCR of fullscreen landscape games, SSL settings and a manually triggered glass-star floating button. Build with `build-android.ps1`; APKs go into timestamped `dist/` folders. The Android demo retains manual support-card candidate selection and still needs real-device game acceptance. The existing Windows app remains in place. Portable vocabulary and desktop-generated parity fixtures live in [shared/](shared/README.md).
+The native Android app lives in [android/](android/README.md). It supports website synchronization, offline multilingual guide lookup, local OCR of fullscreen landscape games, SSL settings and a manually triggered glass-star floating button. Build with `build-android.ps1`; APKs go into timestamped `dist/` folders. Android retains manual support-card candidate selection and still needs real-device game acceptance. The existing Windows app remains in place. Portable vocabulary and desktop-generated parity fixtures live in [shared/](shared/README.md).
 
 ## Start
 
@@ -68,4 +68,4 @@ The supplied support-card screenshot was also tested through the real Chinese OC
 
 Floating button appearance is adjustable in settings: size 40–160 logical pixels (default 72), transparency 0–90% (default 0%, fully opaque). Zero transparency is fully opaque. Changes apply immediately and persist per user. The button artwork scales with its size and its position is clamped to the monitor.
 
-The approved white glass icon has one pale-blue outer border and a faceted blue-white four-point star. Windows floating controls and the application use `star_savior/assets/app-icon.png`; the EXE build embeds the multi-size ICO. Android uses the same artwork for its floating button and density-specific/adaptive launcher icons. Launcher masking remains controlled by the Android launcher. The high-resolution transparent master is retained alongside the Windows assets.
+Application icons use a flat blue rounded square; floating buttons use a separate circular blue background. Both share a symmetric white four-point star with slightly rounded corners. Windows uses `star_savior/assets/app-icon.png` for the application and `floating-icon.png` for the overlay and its preview; the EXE embeds the multi-size ICO. Android uses `floating_icon.png` for its overlay and separate density-specific/adaptive launcher resources. Launcher masking remains controlled by Android. Run `tools/generate_app_icon.ps1` to regenerate all resources from the shared geometry.
