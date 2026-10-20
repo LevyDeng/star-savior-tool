@@ -219,7 +219,8 @@ class MainActivity : Activity() {
                     result.exceptionOrNull()?.let { Log.e("MainActivity", "ESPR synchronization failed", it) }
                     runOnUiThread { if (!isDestroyed) {
                         setBusy(false); updateSummary()
-                        status.text = result.fold({ Ui.text(this, "synced") }, {
+                        status.text = result.fold({ Ui.text(this, "synced") +
+                            if (raw.optBoolean("card_catalog_unavailable")) "\n" + Ui.text(this, "card_index_failed") else "" }, {
                             Ui.text(this, "sync_failed").replace("{error}", it.message ?: it.javaClass.simpleName)
                         })
                     } }

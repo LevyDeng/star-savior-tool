@@ -8,7 +8,7 @@ import java.util.Locale
 data class Choice(val order: Int, val text: String, val effect: String)
 data class GuideEvent(val title: String, val phase: String, val source: String,
                       val options: List<Choice>, val displayPhase: String,
-                      val displaySource: String, val cardId: Long? = null)
+                      val displaySource: String, val cardId: Long? = null, val cardEvent: Boolean = cardId != null)
 data class Candidate(val event: GuideEvent, var score: Double,
                      val optionScores: List<Double>, val titleScore: Double)
 data class MatchResult(val state: String, val candidates: List<Candidate>)

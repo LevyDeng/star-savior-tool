@@ -51,7 +51,11 @@ The native adapter uses exported Windows vocabulary, language fallback, ordered 
 
 ML Kit's bundled Latin, Chinese, Japanese and Korean models provide the five selected languages (Simplified/Traditional Chinese share one script model). This avoids the Play Services model-download path and increases APK size. Model performance and memory behavior require real-device measurements.
 
-Support-card identity is retained in the data and candidate labels. Automatic card-image disambiguation is not yet implemented on Android; for identical titles and choices, inspect the card name and manually select the correct candidate. The top candidate may otherwise describe a different card. Likewise, letterboxing, system bars, protected content, orientation, and vendor overlay restrictions need testing on the actual game device. Fixed title and choice regions are relative to the full captured display; letterboxed or inset game layouts may require future adaptation.
+Support-card identities are retained in candidate labels. Android now compares card artwork for competing support-card events with similar text scores. ESPR synchronization also reads the public card index (localized names, game IDs and original-image URLs), so new-source matching does not require a legacy database sync. Existing installations must synchronize ESPR again once to populate this index. Candidate images download on demand with bounded sizes and normal HTTPS checks, then are atomically cached under private `card_images/`. The ESPR image requests include the site Referer expected by its CDN.
+
+Local CPU OpenCV SIFT features and a RANSAC homography check tolerate card tilt, perspective and scale. A clear winner is moved to the first result and its card name is shown; all manual alternatives remain available. Incomplete reference downloads, missing identities and inconclusive images are explicitly marked and do not silently become a successful image match. Screenshots stay local. Native matrices and decoded images are released after each recognition; no GPU model or persistent visual model is added. The APK includes OpenCV for the supported CPU architectures and compresses native libraries, which Android extracts during installation.
+
+As with OCR, letterboxing, system bars, protected content, orientation, and vendor overlay restrictions need testing on the actual game device. Fixed title and choice regions are relative to the full captured display; letterboxed or inset game layouts may require future adaptation.
 
 ## Verification
 

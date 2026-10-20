@@ -12,7 +12,7 @@ Source publication/update timestamps are omitted because the source does not exp
 
 Windows caches: `espr.sqlite3` (locale rows) and the unchanged `website.sqlite3` (Arcana DB). Android caches: `guide-espr.json` and the unchanged `guide.json`. Failed, cancelled, or incomplete syncs preserve the last successful cache for that source and language.
 
-The native Android app lives in [android/](android/README.md). It supports website synchronization, offline multilingual guide lookup, local OCR of fullscreen landscape games, SSL settings and a manually triggered glass-star floating button. Build with `build-android.ps1`; APKs go into timestamped `dist/` folders. Android retains manual support-card candidate selection and still needs real-device game acceptance. The existing Windows app remains in place. Portable vocabulary and desktop-generated parity fixtures live in [shared/](shared/README.md).
+The native Android app lives in [android/](android/README.md). It supports website synchronization, offline multilingual guide lookup, local OCR of fullscreen landscape games, SSL settings and a manually triggered glass-star floating button. Build with `build-android.ps1`; APKs go into timestamped `dist/` folders. Android supports local support-card image disambiguation with manual candidates retained, and still needs real-device game acceptance. The existing Windows app remains in place. Portable vocabulary and desktop-generated parity fixtures live in [shared/](shared/README.md).
 
 ## Start
 

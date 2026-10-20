@@ -20,9 +20,12 @@ class EsprBrowser(private val activity: Activity, language: String,
     private val handler = Handler(Looper.getMainLooper())
     private val view = WebView(activity)
     private val hint = Ui.label(activity, Ui.text(activity, "browser_sync_hint"), 13f)
-    private val expectedPath = JSONObject.quote(android.net.Uri.parse(EsprData.url(language)).path)
-    private val extractor = activity.assets.open("espr-extract.js").bufferedReader().use { it.readText() }
-    private val script = "(function(){ if(location.pathname.replace(/\\/\u0024/, \"\") !== $expectedPath) return null; return $extractor; })()"
+    private val journeyUrl = EsprData.url(language)
+    private val cardsUrl = journeyUrl.replace("/journey-events", "/arcanas")
+    private val extractors = listOf("espr-extract.js", "espr-cards-extract.js").map { name ->
+        activity.assets.open(name).bufferedReader().use { it.readText() }
+    }
+    private var journey: JSONObject? = null
     private var done = false
     private var waiting = false
     private val poll = object : Runnable {
@@ -30,6 +33,9 @@ class EsprBrowser(private val activity: Activity, language: String,
             if (!dialog.isShowing || done) return
             if (!waiting) {
                 waiting = true
+                val phase = if (journey == null) 0 else 1
+                val expectedPath = JSONObject.quote(android.net.Uri.parse(if (phase == 0) journeyUrl else cardsUrl).path)
+                val script = "(function(){ if(location.pathname.replace(/\\/\u0024/, \"\") !== $expectedPath) return null; return ${extractors[phase]}; })()"
                 view.evaluateJavascript(script) { value ->
                     waiting = false
                     if (!done && dialog.isShowing) {
@@ -37,16 +43,24 @@ class EsprBrowser(private val activity: Activity, language: String,
                             val text = JSONTokener(value).nextValue() as? String ?: return@runCatching null
                             JSONObject(text)
                         }.getOrNull()
-                        if (data?.optJSONArray("events")?.length()?.let { it > 0 } == true) {
-                            done = true
-                            dialog.dismiss()
-                            loaded(data)
+                        if (phase == 0 && data?.optJSONArray("events")?.length()?.let { it > 0 } == true) {
+                            journey = data
+                            hint.text = Ui.text(activity, "card_index_sync")
+                            view.loadUrl(cardsUrl)
+                        } else if (phase == 1 && data?.optJSONArray("cards")?.length()?.let { it > 0 } == true) {
+                            finish(journey!!.put("card_catalog", data.getJSONArray("cards")))
                         }
                     }
                 }
             }
             if (!done) handler.postDelayed(this, 1500)
         }
+    }
+
+    private fun finish(raw: JSONObject) {
+        done = true
+        dialog.dismiss()
+        loaded(raw)
     }
 
     init {
@@ -69,11 +83,12 @@ class EsprBrowser(private val activity: Activity, language: String,
         }
         dialog.show()
         dialog.window?.setLayout(-1, -1)
-        view.loadUrl(EsprData.url(language))
+        view.loadUrl(journeyUrl)
         handler.postDelayed(poll, 1500)
         handler.postDelayed({ if (!done) {
             handler.removeCallbacks(poll)
-            hint.text = Ui.text(activity, "browser_sync_timeout")
+            if (journey != null) finish(journey!!.put("card_catalog_unavailable", true))
+            else hint.text = Ui.text(activity, "browser_sync_timeout")
         } }, 120000)
     }
 }

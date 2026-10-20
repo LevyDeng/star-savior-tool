@@ -30,6 +30,11 @@ object ResultsPanel {
         scroll.addView(body)
         val elapsed = Ui.text(context, "elapsed").replace("{seconds}", "%.2f".format(recognition.elapsed))
         body.addView(Ui.label(context, elapsed + "\n" + Ui.text(context, "verify_result"), 13f))
+        recognition.card?.let { card ->
+            val label = if (card.status == "matched") Ui.text(context, "identified_card").replace("{card}", card.name)
+                else Ui.text(context, "card_" + card.status)
+            body.addView(Ui.label(context, label, 15f))
+        }
         val effects = Ui.column(context).apply { background = Ui.surface() }
         body.addView(effects)
         fun show(event: GuideEvent) {

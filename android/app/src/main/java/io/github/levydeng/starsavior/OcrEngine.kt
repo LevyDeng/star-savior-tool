@@ -14,12 +14,12 @@ import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 data class Recognition(val title: List<String>, val choices: List<String>, val match: MatchResult, val elapsed: Double,
-                       val source: String = "")
+                       val source: String = "", val card: CardResolution? = null)
 
 object Regions {
     fun load(context: Context): Map<String, RectF> {
         val defaults = JSONObject(context.assets.open("contract.json").bufferedReader().use { it.readText() }).getJSONObject("regions")
-        return listOf("title", "options").associateWith { key ->
+        return listOf("title", "options", "card").associateWith { key ->
             val points = defaults.getJSONArray(key)
             RectF(points.getDouble(0).toFloat(), points.getDouble(1).toFloat(),
                   points.getDouble(2).toFloat(), points.getDouble(3).toFloat())
@@ -40,6 +40,10 @@ object Regions {
         if (aspect > 1.9f) regions.getValue("options").apply {
             top = minOf(top, 0.34f)
             bottom = 0.80f
+        }
+        regions.getValue("card").apply {
+            left = minOf(left, 0.025f); right = maxOf(right, 0.16f); top = minOf(top, 0.08f)
+            bottom = maxOf(bottom, 0.29f * maxOf(1f, aspect / 1.6f) + 0.025f).coerceAtMost(0.48f)
         }
         return regions
     }
@@ -64,12 +68,15 @@ class OcrEngine(private val context: Context) {
             "ko-KR" -> TextRecognition.getClient(KoreanTextRecognizerOptions.Builder().build())
             else -> TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         }
-        fun read(rect: RectF): List<String> {
+        fun crop(rect: RectF): Bitmap {
             val left = (rect.left * bitmap.width).toInt().coerceIn(0, bitmap.width - 1)
             val top = (rect.top * bitmap.height).toInt().coerceIn(0, bitmap.height - 1)
             val width = ((rect.right * bitmap.width).toInt() - left).coerceIn(1, bitmap.width - left)
             val height = ((rect.bottom * bitmap.height).toInt() - top).coerceIn(1, bitmap.height - top)
-            val crop = Bitmap.createBitmap(bitmap, left, top, width, height)
+            return Bitmap.createBitmap(bitmap, left, top, width, height)
+        }
+        fun read(rect: RectF): List<String> {
+            val crop = crop(rect)
             try {
                 val text = Tasks.await(recognizer.process(InputImage.fromBitmap(crop, 0)), 30, TimeUnit.SECONDS)
                 return text.textBlocks.flatMap { it.lines }.sortedWith(compareBy({ it.boundingBox?.top ?: 0 }, { it.boundingBox?.left ?: 0 })).map { it.text }
@@ -79,7 +86,25 @@ class OcrEngine(private val context: Context) {
             val regions = Regions.forFrame(context, bitmap.width, bitmap.height)
             val title = read(regions.getValue("title")); val choices = read(regions.getValue("options"))
             val (actualSource, result) = GuideMatcher.matchSources(provider, events, backup, title, choices)
-            return Recognition(title, choices, result, (System.nanoTime() - started) / 1e9, actualSource)
+            val contenders = CardCatalog.contenders(result)
+            val identities = contenders.mapNotNull { it.event.cardId }.distinct()
+            val ambiguous = contenders.count { it.event.cardEvent } > 1 &&
+                (identities.size > 1 || contenders.any { it.event.cardEvent && it.event.cardId == null })
+            val card = if (ambiguous) {
+                val references = repository.cards(language).filter { it.id in identities }
+                if (contenders.any { it.event.cardEvent && it.event.cardId == null } || references.map { it.id }.toSet() != identities.toSet()) {
+                    CardResolution("catalog_missing")
+                } else {
+                    val cardCrop = crop(regions.getValue("card"))
+                    try { CardMatcher.resolve(cardCrop, references, context) }
+                    catch (error: Exception) {
+                        android.util.Log.w("OcrEngine", "Card image matching failed", error)
+                        CardResolution("unavailable")
+                    } finally { if (cardCrop !== bitmap) cardCrop.recycle() }
+                }
+            } else null
+            return Recognition(title, choices, if (card != null) CardCatalog.select(result, card) else result,
+                (System.nanoTime() - started) / 1e9, actualSource, card)
         } finally { recognizer.close() }
     }
 }

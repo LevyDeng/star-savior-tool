@@ -67,7 +67,7 @@ object EsprData {
                 Choice(index + 1, text(choice.opt("label")).ifBlank { words.text("automatic") }, effects.joinToString("\n\n"))
             }
             val source = if (cards.isEmpty()) words.text("journey_source") else words.text("arcana_source", "card" to cards.joinToString(" / "))
-            GuideEvent(title, id, "ESPR.gg / Journey / $id", options, "", "ESPR.gg / $source")
+            GuideEvent(title, id, "ESPR.gg / Journey / $id", options, "", "ESPR.gg / $source", cardEvent = cards.isNotEmpty())
         }
     }
 }

@@ -36,12 +36,17 @@ android {
         getByName("test").resources.srcDir("../../shared/fixtures")
     }
     testOptions { unitTests.isReturnDefaultValues = true }
+    // Compress native runtimes in the downloadable APK; Android extracts them at install time.
+    packaging { jniLibs.useLegacyPackaging = true }
 }
 dependencies {
+    implementation("org.opencv:opencv:4.12.0")
     implementation("com.google.mlkit:text-recognition:16.0.1")
     implementation("com.google.mlkit:text-recognition-chinese:16.0.1")
     implementation("com.google.mlkit:text-recognition-japanese:16.0.1")
     implementation("com.google.mlkit:text-recognition-korean:16.0.1")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }

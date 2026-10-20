@@ -40,10 +40,21 @@ class GuideRepository(context: Context) {
     fun events(language: String, difficulty: String, provider: String = source): List<GuideEvent> {
         if (provider == "espr") {
             val raw = esprSnapshot.optJSONObject(language)?.optJSONObject("data") ?: return emptyList()
-            return converted.getOrPut(("espr:$language") to difficulty) { EsprData.convert(raw, language, difficulty, vocabulary) }
+            return converted.getOrPut(("espr:$language") to difficulty) {
+                CardCatalog.attach(EsprData.convert(raw, language, difficulty, vocabulary), raw, cards(language))
+            }
         }
         val raw = snapshot ?: return emptyList()
         return converted.getOrPut(language to difficulty) { converter.convert(raw, language, difficulty) }
+    }
+
+    @Synchronized
+    fun cards(language: String): List<CardReference> {
+        val legacy = CardCatalog.legacy(snapshot?.optJSONArray("arcanas"), language)
+        val current = esprSnapshot.optJSONObject(language)?.optJSONObject("data")?.optJSONArray("card_catalog")
+            ?.let { CardCatalog.espr(it) } ?: emptyList()
+        val byId = legacy.associateBy { it.id }
+        return current.map { it.copy(eventIds = byId[it.id]?.eventIds ?: emptySet()) } + legacy.filter { old -> current.none { it.id == old.id } }
     }
 
     fun sync(verifyTls: Boolean = true) {
@@ -87,6 +98,9 @@ class GuideRepository(context: Context) {
     fun replaceEspr(language: String, raw: JSONObject) {
         require(language in EsprData.locales) { "Unsupported ESPR locale" }
         for (difficulty in GuideConverter.difficulties.keys) EsprData.convert(raw, language, difficulty, vocabulary)
+        raw.optJSONArray("card_catalog")?.let { require(it.length() <= 2000); CardCatalog.espr(it) }
+        if (!raw.has("card_catalog")) esprSnapshot.optJSONObject(language)?.optJSONObject("data")?.optJSONArray("card_catalog")
+            ?.let { raw.put("card_catalog", it) }
         val next = JSONObject(esprSnapshot.toString()).put(language,
             JSONObject().put("updated", Instant.now().toString()).put("data", raw))
         val stream = esprCache.startWrite()
