@@ -9,9 +9,9 @@ import android.widget.LinearLayout
 import android.widget.TextView
 
 object Ui {
-    val blue = Color.rgb(53, 125, 185)
-    val ink = Color.rgb(34, 59, 86)
-    val background = Color.rgb(241, 247, 252)
+    val blue = Color.rgb(48, 123, 216)
+    val ink = Color.rgb(24, 50, 84)
+    val background = Color.rgb(241, 246, 252)
     fun dp(context: Context, value: Int) = (value * context.resources.displayMetrics.density).toInt()
     fun surface(color: Int = Color.WHITE, radius: Float = 18f) = GradientDrawable().apply {
         setColor(color); cornerRadius = radius; setStroke(1, Color.rgb(203, 223, 238))
@@ -20,6 +20,10 @@ object Ui {
         orientation = LinearLayout.VERTICAL
         setPadding(dp(context, 16), dp(context, 12), dp(context, 16), dp(context, 12))
         setBackgroundColor(Ui.background)
+    }
+    fun card(context: Context) = column(context).apply {
+        background = surface(Color.WHITE, dp(context, 14).toFloat())
+        layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(context, 14) }
     }
     fun label(context: Context, value: String, size: Float = 16f) = TextView(context).apply {
         text = value; textSize = size; setTextColor(ink)

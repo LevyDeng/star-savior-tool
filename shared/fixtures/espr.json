@@ -1,0 +1,19 @@
+{
+  "events": [{
+    "id": "1001", "title": "Beach tournament", "arcanas": [], "saviors": [],
+    "choices": [{
+      "label": "Attack the weak point.",
+      "gate": {"kind": "stat", "name": "Strength", "count": 200, "counts": [200, 300, 500]},
+      "success": [{"oneOf": false, "chips": [{"label": "Focus", "amount": "+20"}]},
+                  {"oneOf": false, "chips": [{"label": "Potential Point", "amount": "+20"}]}],
+      "failure": [{"oneOf": false, "chips": [{"label": "Stamina", "amount": "-5"}]}]
+    }, {
+      "label": "Rest.", "gate": null, "success": [], "failure": [],
+      "variants": [
+        {"success": [{"oneOf": true, "chips": [{"label": "Vitality", "amount": "+20 / +30"}]}], "failure": []},
+        {"success": [{"oneOf": false, "chips": [{"label": "Protection", "amount": "+10", "note": "A temporary bonus"}]}], "failure": []}
+      ]
+    }]
+  }],
+  "tiers": ["Easy", "Normal", "Hard"]
+}

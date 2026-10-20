@@ -2,6 +2,10 @@
 
 Native Kotlin application for Android 8.0 (API 26) and later. The application currently targets API 34 and is distributed as a sideloaded APK. Windows source and packaging remain in their existing locations.
 
+ESPR.gg is the default source. Select Arcana DB in settings to use the backup instead. The selected source is searched first; if it has no matching candidates, the other local cache is searched. Sync each source separately. Rewards are never spliced together. Caches remain separate: `guide-espr.json` stores validated ESPR locale snapshots, while the existing `guide.json` remains the Arcana DB cache. ESPR sync opens a normal device WebView and reads the full public event payload after the page loads. Complete any interactive verification manually. Only the selected language is synchronized. Failure or cancellation preserves the previous snapshot. The WebView uses system networking and normal certificate validation; the skip-TLS setting applies to the backup HTTP downloader. The unavailable source update time is omitted; the last successful local sync time remains visible.
+
+The redesigned settings use the blue-white ImageGen reference in `design/ui-reference.png`: separate database, recognition, and floating-button panels. The existing screen-capture flow, scan indicator, size/transparency sliders, result candidates, and raw text remain available.
+
 ## Build and install
 
 Install JDK 17 or newer, Android SDK Platform 34 and Build Tools 34.0.0. Open this directory in Android Studio, or run from the repository root:

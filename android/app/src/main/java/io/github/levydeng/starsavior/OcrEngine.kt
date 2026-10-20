@@ -13,7 +13,8 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
-data class Recognition(val title: List<String>, val choices: List<String>, val match: MatchResult, val elapsed: Double)
+data class Recognition(val title: List<String>, val choices: List<String>, val match: MatchResult, val elapsed: Double,
+                       val source: String = "")
 
 object Regions {
     fun load(context: Context): Map<String, RectF> {
@@ -51,8 +52,12 @@ class OcrEngine(private val context: Context) {
         val settings = Ui.preferences(context)
         val language = settings.getString("language", "zh-CN") ?: "zh-CN"
         val difficulty = settings.getString("difficulty", "Normal") ?: "Normal"
-        val events = AppState.repository(context).events(language, difficulty)
-        check(events.isNotEmpty()) { Ui.text(context, "no_data") }
+        val repository = AppState.repository(context)
+        val provider = repository.source
+        val other = if (provider == "espr") "arcana" else "espr"
+        val events = repository.events(language, difficulty, provider)
+        val backup = repository.events(language, difficulty, other)
+        check(events.isNotEmpty() || backup.isNotEmpty()) { Ui.text(context, "no_data") }
         val recognizer = when (language) {
             "zh-CN", "zh-TW" -> TextRecognition.getClient(ChineseTextRecognizerOptions.Builder().build())
             "ja-JP" -> TextRecognition.getClient(JapaneseTextRecognizerOptions.Builder().build())
@@ -73,7 +78,8 @@ class OcrEngine(private val context: Context) {
         try {
             val regions = Regions.forFrame(context, bitmap.width, bitmap.height)
             val title = read(regions.getValue("title")); val choices = read(regions.getValue("options"))
-            return Recognition(title, choices, GuideMatcher.match(events, title, choices), (System.nanoTime() - started) / 1e9)
+            val (actualSource, result) = GuideMatcher.matchSources(provider, events, backup, title, choices)
+            return Recognition(title, choices, result, (System.nanoTime() - started) / 1e9, actualSource)
         } finally { recognizer.close() }
     }
 }

@@ -141,6 +141,15 @@ def match_regions(events: list[Event], title_lines: list[str], option_lines: lis
     return 'confirm', candidates, '标题无法识别或未匹配，请确认选项匹配出的候选事件。'
 
 
+def match_sources(primary, backup, title_lines, option_lines):
+    """Consult the other cache only when the preferred cache has no candidates."""
+    result = match_regions(primary, title_lines, option_lines)
+    if result[1]:
+        return False, result
+    other = match_regions(backup, title_lines, option_lines)
+    return bool(other[1]), other
+
+
 def match(events: list[Event], lines: list[str]) -> tuple[str, list[Candidate]]:
     """Rank ordered option groups; ambiguous or partial input requires confirmation."""
     normalized = [normalize(line) for line in lines if normalize(line)]

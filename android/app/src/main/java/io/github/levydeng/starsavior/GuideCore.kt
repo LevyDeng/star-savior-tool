@@ -25,6 +25,16 @@ class Vocabulary(private val root: JSONObject, val language: String) {
 }
 
 object GuideMatcher {
+    fun matchSources(provider: String, primary: List<GuideEvent>, backup: List<GuideEvent>,
+                     title: List<String>, choices: List<String>): Pair<String, MatchResult> {
+        val result = match(primary, title, choices)
+        if (result.candidates.isNotEmpty()) return provider to result
+        val other = match(backup, title, choices)
+        return (if (other.candidates.isNotEmpty()) {
+            if (provider == "espr") "arcana" else "espr"
+        } else provider) to other
+    }
+
     fun normalize(value: String): String = Normalizer.normalize(value, Normalizer.Form.NFKC)
         .lowercase(Locale.ROOT).replace(Regex("^\\s*\\d+\\s*[.、:)]\\s*"), "")
         .filter { c -> Character.getType(c) !in setOf(

@@ -35,7 +35,8 @@ object ResultsPanel {
         fun show(event: GuideEvent) {
             effects.removeAllViews()
             effects.addView(Ui.label(context, event.title, 21f))
-            effects.addView(Ui.label(context, listOf(event.displayPhase, event.displaySource).filter { it.isNotBlank() }.joinToString(" | "), 13f))
+            val provider = when (recognition.source) { "espr" -> "ESPR.gg"; "arcana" -> "Arcana DB"; else -> "" }
+            effects.addView(Ui.label(context, listOf(provider, event.displayPhase, event.displaySource).filter { it.isNotBlank() }.joinToString(" | "), 13f))
             for (option in event.options) {
                 effects.addView(Ui.label(context, "${option.order}. ${option.text}", 17f))
                 effects.addView(Ui.label(context, option.effect, 15f))

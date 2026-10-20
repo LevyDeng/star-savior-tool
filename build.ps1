@@ -13,6 +13,8 @@ if (Test-Path -LiteralPath $stagingDirectory) {
 }
 New-Item -ItemType Directory -Path $stagingDirectory | Out-Null
 try {
+    & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'tools\build_webview2.ps1')
+    if ($LASTEXITCODE -ne 0) { throw 'WebView2 bridge build failed' }
     & .\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
     if ($LASTEXITCODE -ne 0) { throw 'Build dependency installation failed' }
     $previousPythonUserBase = $env:PYTHONUSERBASE

@@ -36,27 +36,39 @@ class MainActivity : Activity() {
     private lateinit var startButton: Button
     private lateinit var sslButton: Button
     private var busy = false
+    private var browser: EsprBrowser? = null
+    private val selectors = mutableListOf<Spinner>()
 
     override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); render() }
 
     private fun render() {
+        selectors.clear()
         val body = Ui.column(this)
         val prefs = Ui.preferences(this)
         val header = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-        header.addView(Ui.label(this, "starsaviorhelper", 21f).apply { setTextColor(Ui.blue) }, LinearLayout.LayoutParams(0, -2, 1f))
+        header.addView(Ui.label(this, "starsaviorhelper", 17f).apply { setTextColor(Ui.blue) }, LinearLayout.LayoutParams(0, -2, 1f))
         val languages = linkedMapOf("zh-CN" to "简体中文", "zh-TW" to "繁體中文", "en-US" to "English", "ja-JP" to "日本語", "ko-KR" to "한국어")
         header.addView(selector(languages.keys.toList(), languages.values.toList(), prefs.getString("language", "zh-CN")!!) { value ->
             prefs.edit().putString("language", value).apply(); render()
         }.apply { contentDescription = Ui.text(this@MainActivity, "language") }, LinearLayout.LayoutParams(Ui.dp(this, 130), -2))
         body.addView(header)
-        summary = Ui.label(this, "", 14f); body.addView(summary)
+        body.addView(Ui.label(this, Ui.text(this, "journey_helper"), 29f).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) })
+        body.addView(Ui.label(this, Ui.text(this, "helper_subtitle"), 14f))
+        val database = Ui.card(this)
+        body.addView(database)
+        database.addView(Ui.label(this, Ui.text(this, "guide_data"), 19f).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) })
+        database.addView(Ui.label(this, Ui.text(this, "guide_source"), 13f))
+        database.addView(selector(listOf("espr", "arcana"), listOf(Ui.text(this, "primary_source"), Ui.text(this, "backup_source")),
+            prefs.getString("guide_source", "espr")!!) { value -> prefs.edit().putString("guide_source", value).apply(); render() })
+        summary = Ui.label(this, "", 14f); database.addView(summary)
         val syncRow = LinearLayout(this)
         syncButton = Ui.button(this, Ui.text(this, "sync"), true) { synchronize() }
         syncRow.addView(syncButton, LinearLayout.LayoutParams(0, Ui.dp(this, 48), 1f))
         syncRow.addView(Ui.button(this, Ui.text(this, "website")) {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://star-savior-arcana-db.pages.dev/journey")))
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(AppState.repository(this).sourceUrl(prefs.getString("language", "zh-CN")!!))))
         }, LinearLayout.LayoutParams(0, Ui.dp(this, 48), 1f).apply { marginStart = Ui.dp(this@MainActivity, 8) })
-        body.addView(syncRow)
+        database.addView(syncRow)
+        database.addView(Ui.label(this, Ui.text(this, "sources_separate"), 12f))
         val optionsRow = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0, Ui.dp(this@MainActivity, 12), 0, 0) }
         sslButton = Ui.button(this, Ui.text(this, "ssl_settings")) { configureSsl() }
         optionsRow.addView(sslButton, LinearLayout.LayoutParams(0, Ui.dp(this, 48), 1f))
@@ -67,8 +79,14 @@ class MainActivity : Activity() {
             prefs.edit().putString("difficulty", value).apply(); updateSummary()
         })
         optionsRow.addView(difficulty, LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = Ui.dp(this@MainActivity, 12) })
-        body.addView(optionsRow)
-        addButtonAppearance(body)
+        val recognition = Ui.card(this)
+        recognition.addView(Ui.label(this, Ui.text(this, "recognition_settings"), 19f).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) })
+        recognition.addView(optionsRow)
+        body.addView(recognition)
+        val appearance = Ui.card(this)
+        appearance.addView(Ui.label(this, Ui.text(this, "floating_settings"), 19f).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) })
+        addButtonAppearance(appearance)
+        body.addView(appearance)
         status = Ui.label(this, Ui.text(this, "share_hint"), 14f); body.addView(status)
         body.addView(View(this), LinearLayout.LayoutParams(1, 0, 1f))
         val bottom = LinearLayout(this).apply { gravity = Gravity.END }
@@ -140,6 +158,7 @@ class MainActivity : Activity() {
     private fun selector(keys: List<String>, labels: List<String>, current: String, changed: (String) -> Unit): Spinner {
         var previous = current
         return Spinner(this).apply {
+            selectors.add(this)
             adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, labels)
             setSelection(keys.indexOf(current).coerceAtLeast(0))
             onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -163,10 +182,15 @@ class MainActivity : Activity() {
 
     private fun setBusy(value: Boolean) {
         busy = value; syncButton.isEnabled = !value; startButton.isEnabled = !value; sslButton.isEnabled = !value
+        selectors.forEach { it.isEnabled = !value }
     }
 
     private fun synchronize() {
         if (busy) return
+        if (AppState.repository(this).source == "espr") {
+            synchronizeEspr()
+            return
+        }
         val verifyTls = !Ui.preferences(this).getBoolean("sync_skip_tls", false)
         setBusy(true)
         status.text = Ui.text(this, "syncing") + if (!verifyTls) "\n" + Ui.text(this, "tls_disabled") else ""
@@ -181,6 +205,29 @@ class MainActivity : Activity() {
                     }) + if (!verifyTls) "\n" + Ui.text(this, "tls_disabled") else ""
                 }
             }
+        }
+    }
+
+    private fun synchronizeEspr() {
+        val language = Ui.preferences(this).getString("language", "zh-CN")!!
+        setBusy(true)
+        status.text = Ui.text(this, "browser_sync_hint")
+        runCatching {
+            browser = EsprBrowser(this, language, loaded = { raw ->
+                executor.execute {
+                    val result = runCatching { AppState.repository(this).replaceEspr(language, raw) }
+                    result.exceptionOrNull()?.let { Log.e("MainActivity", "ESPR synchronization failed", it) }
+                    runOnUiThread { if (!isDestroyed) {
+                        setBusy(false); updateSummary()
+                        status.text = result.fold({ Ui.text(this, "synced") }, {
+                            Ui.text(this, "sync_failed").replace("{error}", it.message ?: it.javaClass.simpleName)
+                        })
+                    } }
+                }
+            }, cancelled = { if (!isDestroyed) { setBusy(false); status.text = Ui.text(this, "browser_sync_cancelled") } })
+        }.onFailure {
+            setBusy(false)
+            status.text = Ui.text(this, "sync_failed").replace("{error}", it.message ?: it.javaClass.simpleName)
         }
     }
 
@@ -220,5 +267,5 @@ class MainActivity : Activity() {
         }
     }
 
-    override fun onDestroy() { executor.shutdown(); super.onDestroy() }
+    override fun onDestroy() { browser?.close(); executor.shutdown(); super.onDestroy() }
 }

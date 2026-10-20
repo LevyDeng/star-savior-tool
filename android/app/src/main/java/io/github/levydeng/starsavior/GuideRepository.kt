@@ -11,24 +11,37 @@ import java.time.Instant
 import javax.net.ssl.HttpsURLConnection
 
 class GuideRepository(context: Context) {
+    private val preferences = Ui.preferences(context)
+    private val esprCache = AtomicFile(File(context.filesDir, "guide-espr.json"))
+    private var esprSnapshot = JSONObject()
     private val cache = AtomicFile(File(context.filesDir, "guide.json"))
     val vocabulary = JSONObject(context.assets.open("vocabulary.json").bufferedReader().use { it.readText() })
     private val converter = GuideConverter(vocabulary)
     private var snapshot: JSONObject? = null
     private val converted = mutableMapOf<Pair<String, String>, List<GuideEvent>>()
-    var updated: String = ""
-        private set
+    private var legacyUpdated: String = ""
+    val source: String get() = preferences.getString("guide_source", "espr")?.takeIf { it in setOf("espr", "arcana") } ?: "espr"
+    val updated: String get() = if (source == "arcana") legacyUpdated else
+        esprSnapshot.optJSONObject(preferences.getString("language", "zh-CN")!!)?.optString("updated", "") ?: ""
+    fun sourceUrl(language: String) = if (source == "espr") EsprData.url(language) else "https://star-savior-arcana-db.pages.dev/journey"
 
     init {
         if (cache.baseFile.exists()) runCatching {
             val payload = cache.openRead().bufferedReader().use { JSONObject(it.readText()) }
             snapshot = payload.getJSONObject("data")
-            updated = payload.getString("updated")
+            legacyUpdated = payload.getString("updated")
         }.onFailure { Log.e("GuideRepository", "Could not load cached snapshot", it) }
+        if (esprCache.baseFile.exists()) runCatching {
+            esprSnapshot = esprCache.openRead().bufferedReader().use { JSONObject(it.readText()) }
+        }.onFailure { Log.e("GuideRepository", "Could not load ESPR snapshot", it) }
     }
 
     @Synchronized
-    fun events(language: String, difficulty: String): List<GuideEvent> {
+    fun events(language: String, difficulty: String, provider: String = source): List<GuideEvent> {
+        if (provider == "espr") {
+            val raw = esprSnapshot.optJSONObject(language)?.optJSONObject("data") ?: return emptyList()
+            return converted.getOrPut(("espr:$language") to difficulty) { EsprData.convert(raw, language, difficulty, vocabulary) }
+        }
         val raw = snapshot ?: return emptyList()
         return converted.getOrPut(language to difficulty) { converter.convert(raw, language, difficulty) }
     }
@@ -66,8 +79,25 @@ class GuideRepository(context: Context) {
             }
             snapshot = raw
             converted.clear(); converted.putAll(next)
-            updated = timestamp
+            legacyUpdated = timestamp
         }
+    }
+
+    @Synchronized
+    fun replaceEspr(language: String, raw: JSONObject) {
+        require(language in EsprData.locales) { "Unsupported ESPR locale" }
+        for (difficulty in GuideConverter.difficulties.keys) EsprData.convert(raw, language, difficulty, vocabulary)
+        val next = JSONObject(esprSnapshot.toString()).put(language,
+            JSONObject().put("updated", Instant.now().toString()).put("data", raw))
+        val stream = esprCache.startWrite()
+        try {
+            stream.write(next.toString().toByteArray(Charsets.UTF_8))
+            esprCache.finishWrite(stream)
+        } catch (error: Exception) {
+            esprCache.failWrite(stream); throw error
+        }
+        esprSnapshot = next
+        converted.clear()
     }
 
     private fun fetch(file: String, verifyTls: Boolean): Any {

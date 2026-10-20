@@ -12,10 +12,11 @@ from datetime import datetime
 from PySide6.QtCore import QAbstractNativeEventFilter, QSettings, QStandardPaths, QThread, QTimer, QUrl, Qt, Signal, QRect, QPoint
 from PySide6.QtGui import QDesktopServices, QFont, QIcon, QImage, QPainter, QPixmap
 from PySide6.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QMainWindow, QMessageBox, QPushButton, QRubberBand, QSlider, QTextBrowser, QVBoxLayout, QWidget
-from .core import match_regions
+from .core import match_regions, match_sources
 from .layout import DEFAULT_REGIONS, valid_regions
 from .floating import FloatingButton, FloatingButtonPreview, FloatingResults
 from .website import DIFFICULTIES, SOURCE_URL, WebsiteStore, download, localized
+from .espr import EsprStore, download as download_espr, source_url as espr_url
 from .i18n import LANGUAGES, tr
 from .presentation import THEME
 from .network import validate_proxy
@@ -26,14 +27,16 @@ from . import windows
 class SyncWorker(QThread):
     result = Signal(object)
     failed = Signal(str)
-    def __init__(self, parent=None, proxy_url='', verify_tls=True):
+    def __init__(self, parent=None, proxy_url='', verify_tls=True, source='arcana', language='zh-CN'):
         super().__init__(parent)
         self.proxy_url = proxy_url
         self.verify_tls = verify_tls
+        self.source, self.language = source, language
 
     def run(self):
         try:
-            self.result.emit(download(self.proxy_url, self.verify_tls))
+            self.result.emit(download_espr(self.language, self.proxy_url, self.verify_tls)
+                             if self.source == 'espr' else download(self.proxy_url, self.verify_tls))
         except Exception as exc:
             self.failed.emit(str(exc))
 
@@ -83,7 +86,7 @@ class OCRWorker(QThread):
     failed = Signal(str)
     progress = Signal(str)
 
-    def __init__(self, image, regions, language='zh-CN', events=None, cards=None, cache_dir=None):
+    def __init__(self, image, regions, language='zh-CN', events=None, cards=None, cache_dir=None, backup_events=None):
         super().__init__()
         self.image = image
         self.regions = regions
@@ -91,13 +94,15 @@ class OCRWorker(QThread):
         self.events = events or []
         self.cards = cards or []
         self.cache_dir = cache_dir
+        self.backup_events = backup_events or []
 
     def run(self):
         try:
             started = time.perf_counter()
             from .ocr import recognize_regions
             result, elapsed = recognize_regions(self.image, self.regions, self.language)
-            state, candidates, _ = match_regions(self.events, result['title'], result['options'])
+            _, (state, candidates, _) = match_sources(
+                self.events, self.backup_events, result['title'], result['options'])
             card_ids = {candidate.event.card_id for candidate in candidates if candidate.event.card_id is not None}
             if state != 'matched' and len(card_ids) > 1 and self.cache_dir is not None:
                 self.progress.emit(tr('card_busy', self.language))
@@ -146,9 +151,14 @@ class MainWindow(QMainWindow):
         self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
         self.resize(820, 410)
         self.setStyleSheet(THEME)
-        self.store = WebsiteStore(data_dir / 'website.sqlite3')
+        legacy = WebsiteStore(data_dir / 'website.sqlite3')
+        self.stores = {'arcana': legacy, 'espr': EsprStore(data_dir / 'espr.sqlite3', legacy.cards)}
         self.card_cache_dir = data_dir / 'card_images'
         self.settings = QSettings(str(data_dir / 'settings.ini'), QSettings.Format.IniFormat)
+        self.source = self.settings.value('guide_source', 'espr')
+        if self.source not in self.stores:
+            self.source = 'espr'
+        self.store = self.stores[self.source]
         self.language = self.settings.value('language', 'zh-CN')
         if self.language not in LANGUAGES:
             self.language = 'zh-CN'
@@ -195,7 +205,16 @@ class MainWindow(QMainWindow):
         self.sync_button = self.button('sync', self.sync)
         self.sync_button.setProperty('primary', True)
         row.addWidget(self.sync_button, 1)
-        row.addWidget(self.button('website', lambda: QDesktopServices.openUrl(QUrl(SOURCE_URL))), 1)
+        row.addWidget(self.button('website', self.open_source), 1)
+        layout.addLayout(row)
+        row = QHBoxLayout()
+        row.addWidget(self.label('guide_source'))
+        self.source_list = QComboBox()
+        self.source_list.addItem('ESPR.gg', 'espr')
+        self.source_list.addItem('Arcana DB', 'arcana')
+        self.source_list.setCurrentIndex(self.source_list.findData(self.source))
+        self.source_list.currentIndexChanged.connect(self.source_changed)
+        row.addWidget(self.source_list, 1)
         layout.addLayout(row)
         self.network_button = self.button('network_settings', self.configure_network)
         self.language_list = QComboBox()
@@ -292,6 +311,8 @@ class MainWindow(QMainWindow):
         self.candidate_list = self.floating_results.candidates
         self.effects = self.floating_results.effects
         self.setCentralWidget(body)
+        from .dashboard import build_dashboard
+        build_dashboard(self)
         self.retranslate()
         self.refresh_windows()
         self.update_summary()
@@ -302,6 +323,23 @@ class MainWindow(QMainWindow):
 
     def t(self, key, **values):
         return tr(key, self.language, **values)
+
+    def open_source(self):
+        QDesktopServices.openUrl(QUrl(espr_url(self.language) if self.source == 'espr' else SOURCE_URL))
+
+    def source_changed(self, *_):
+        if self.busy or (self.sync_worker and self.sync_worker.isRunning()):
+            self.source_list.blockSignals(True)
+            self.source_list.setCurrentIndex(self.source_list.findData(self.source))
+            self.source_list.blockSignals(False)
+            return
+        self.source = self.source_list.currentData()
+        self.settings.setValue('guide_source', self.source)
+        self.store = self.stores[self.source]
+        self.store.language, self.store.difficulty = self.language, self.difficulty
+        self.clear_results()
+        self.update_summary()
+        self.status.setText(self.t('sources_separate'))
 
     def update_button_appearance(self, *_):
         size = self.button_size.value()
@@ -316,7 +354,7 @@ class MainWindow(QMainWindow):
     def fit_results(self):
         area = self.screen().availableGeometry()
         layout = self.centralWidget().layout()
-        height = min(max(410, layout.sizeHint().height()), max(240, area.height() - 64))
+        height = min(max(620, self.height(), layout.sizeHint().height()), max(240, area.height() - 64))
         self.resize(min(self.width(), area.width() - 32), height)
         if self.isVisible():
             frame = self.frameGeometry()
@@ -342,6 +380,8 @@ class MainWindow(QMainWindow):
             widget.setText(self.t(key))
         for index in range(self.difficulty_list.count()):
             self.difficulty_list.setItemText(index, self.t(self.difficulty_list.itemData(index)))
+        self.source_list.setItemText(0, self.t('primary_source'))
+        self.source_list.setItemText(1, self.t('backup_source'))
         self.floating_button.set_language(self.language)
         self.floating_results.set_language(self.language)
 
@@ -429,7 +469,7 @@ class MainWindow(QMainWindow):
         self.sync_button.setEnabled(False)
         skip_tls = self.settings.value('sync_skip_tls', False, type=bool)
         self.status.setText(self.t('syncing') + (' ' + self.t('tls_disabled') if skip_tls else ''))
-        self.sync_worker = SyncWorker(self, str(self.settings.value('sync_proxy', '')), not skip_tls)
+        self.sync_worker = SyncWorker(self, str(self.settings.value('sync_proxy', '')), not skip_tls, self.source, self.language)
         self.sync_worker.result.connect(self.synced)
         self.sync_worker.failed.connect(self.sync_failed)
         self.sync_worker.finished.connect(lambda: self.sync_button.setEnabled(True))
@@ -445,6 +485,19 @@ class MainWindow(QMainWindow):
             self.sync_failed(str(exc))
 
     def sync_failed(self, error):
+        if self.source == 'espr' and 'ESPR_BROWSER_REQUIRED:' in error:
+            try:
+                from .browser_sync import BrowserSyncDialog
+                dialog = BrowserSyncDialog(self.language, self)
+                try:
+                    if dialog.exec() == QDialog.DialogCode.Accepted and dialog.snapshot:
+                        self.synced(dialog.snapshot)
+                        return
+                finally:
+                    dialog.deleteLater()
+                error = self.t('browser_sync_cancelled')
+            except Exception as exc:
+                error = str(exc)
         self.status.setText(self.t('sync_failed', error=error))
 
     def refresh_windows(self):
@@ -585,7 +638,8 @@ class MainWindow(QMainWindow):
         self.floating_button.set_busy(True)
         self.status.setText(self.t('ocr_busy'))
         self.worker = OCRWorker(image, dict(self.regions), self.language,
-                                self.store.load(), self.store.cards(), self.card_cache_dir)
+                                self.store.load(), self.store.cards(), self.card_cache_dir,
+                                self.other_store().load(self.language, self.difficulty))
         self.worker.progress.connect(self.status.setText)
         self.worker.result.connect(self.ocr_finished)
         self.worker.failed.connect(self.ocr_failed)
@@ -608,7 +662,9 @@ class MainWindow(QMainWindow):
         recognized = self.t('title') + ':\n' + ('\n'.join(title) or self.t('unreadable')) + '\n\n' + self.t('options') + ':\n' + ('\n'.join(options) or self.t('unreadable'))
         self.ocr_text.setPlainText(recognized)
         events = self.store.load()
-        state, self.candidates, reason = match_regions(events, title, options)
+        backup = self.other_store().load(self.language, self.difficulty)
+        used_backup, (state, self.candidates, reason) = match_sources(events, backup, title, options)
+        self.result_source = ('arcana' if self.source == 'espr' else 'espr') if used_backup else self.source
         card_match = result.get('card_match', {})
         card_selected = False
         card_name = ''
@@ -624,7 +680,7 @@ class MainWindow(QMainWindow):
         if card_match:
             self.ocr_text.setPlainText(recognized + '\n\n' + self.t(
                 'identified_card', card=card_name or self.t('unreadable')))
-        if not events:
+        if not events and not backup:
             self.show_scan_status(self.t('no_data'))
         elif state == 'unknown':
             self.show_scan_status(self.t('result', seconds=elapsed, reason=self.t(state)))
@@ -651,6 +707,9 @@ class MainWindow(QMainWindow):
         else:
             self.show_scan_status(self.t('result', seconds=elapsed, reason=self.t('unknown')))
 
+    def other_store(self):
+        return self.stores['arcana' if self.source == 'espr' else 'espr']
+
     def confirm_candidate(self, index):
         if not 0 <= index < len(self.candidates):
             return
@@ -660,6 +719,8 @@ class MainWindow(QMainWindow):
     def show_effects(self, event):
         context = ' | '.join(value for value in (event.visible_phase,
             f'{self.t("source")}: {event.visible_source}') if value)
+        provider = getattr(self, 'result_source', self.source)
+        context = ('ESPR.gg' if provider == 'espr' else 'Arcana DB') + ' | ' + context
         text = [f'<h2 style="color:#286da6; margin-bottom:6px;">{escape(event.title)}</h2>',
                 f'<p style="color:#66829b; font-size:12px;">{escape(context)}</p>']
         for option in event.options:
@@ -699,7 +760,8 @@ class MainWindow(QMainWindow):
         self.settings.sync()
         self.floating_button.hide()
         self.floating_results.hide()
-        self.store.db.close()
+        for store in self.stores.values():
+            store.db.close()
         super().closeEvent(event)
 
 

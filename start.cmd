@@ -7,5 +7,7 @@ if not exist .venv\Scripts\python.exe py -3.11 -m venv .venv
 .venv\Scripts\python.exe -c "import PySide6, rapidocr, onnxruntime, PIL" >nul 2>&1
 if errorlevel 1 .venv\Scripts\python.exe -m pip install -r requirements-lock.txt
 if errorlevel 1 exit /b 1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\build_webview2.ps1
+if errorlevel 1 exit /b 1
 .venv\Scripts\python.exe -m star_savior
 pause
